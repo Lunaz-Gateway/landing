@@ -12,22 +12,22 @@ export const Route = createRootRoute({
 				name: "viewport",
 				content: "width=device-width, initial-scale=1",
 			},
-			{ title: "Lunaz — Pay with anything. Settled in private." },
+			{ title: "Lunaz — Private payment gateway for shielded Zcash" },
 			{
 				name: "description",
 				content:
-					"Lunaz is a private, non-custodial payment gateway for shielded Zcash. Accept ZEC, or pay from other chains through NEAR Intents, without exposing your revenue or customers.",
+					"Lunaz is a non-custodial payment gateway API for shielded Zcash: a fresh shielded address per invoice, payments from other chains through NEAR Intents, real-time status and signed webhooks. Pay with anything. Settled in private.",
 			},
 			{ name: "theme-color", content: "#1C1F3D" },
 			{ property: "og:type", content: "website" },
 			{
 				property: "og:title",
-				content: "Lunaz — Pay with anything. Settled in private.",
+				content: "Lunaz — Private payment gateway for shielded Zcash",
 			},
 			{
 				property: "og:description",
 				content:
-					"Lunaz is a private, non-custodial payment gateway for shielded Zcash. Accept ZEC, or pay from other chains through NEAR Intents, without exposing your revenue or customers.",
+					"Lunaz is a non-custodial payment gateway API for shielded Zcash: a fresh shielded address per invoice, payments from other chains through NEAR Intents, real-time status and signed webhooks. Pay with anything. Settled in private.",
 			},
 			{ property: "og:image", content: "/icon-512.png" },
 			{ name: "twitter:card", content: "summary" },

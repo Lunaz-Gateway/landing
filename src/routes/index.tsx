@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { EventStream, GatewayFlow } from "#/components/gateway-flow";
 import { HowItWorks } from "#/components/how-it-works";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -131,134 +132,44 @@ function Hero() {
 	return (
 		<section className="overflow-hidden bg-malam">
 			<div
-				className={`${wrap} grid gap-16 pb-20 pt-14 sm:pt-20 lg:grid-cols-12 lg:gap-8 lg:pb-28`}
+				className={`${wrap} grid items-center gap-12 pb-20 pt-12 sm:pt-16 lg:grid-cols-12 lg:gap-10 lg:pb-28 lg:pt-20`}
 			>
-				<div className="anim-hero-copy lg:col-span-7 lg:pt-10">
+				<div className="anim-hero-copy lg:col-span-6">
 					<p className={`${kicker} text-lunas`}>
-						Private payments on shielded Zcash
+						Payment gateway API for shielded Zcash
 					</p>
-					<h1 className="mt-6 text-[clamp(3.1rem,8.4vw,7.4rem)] font-extrabold leading-[0.92] tracking-[-0.045em]">
-						Pay with
-						<br />
-						anything.
-						<span className="mt-3 block text-lunas sm:pl-[0.9em]">
-							Settled in private.
-						</span>
+					<h1 className="mt-6 text-[clamp(2.75rem,4.4vw,4.6rem)] font-extrabold leading-[0.95] tracking-[-0.045em]">
+						Pay with anything.
+						<span className="block text-lunas">Settled in private.</span>
 					</h1>
-					<p className="mt-9 max-w-[34rem] text-lg leading-relaxed text-kertas/75">
-						When you pay cash, the cashier cannot see your savings. Lunaz brings
-						that privacy back to digital payments: a non-custodial gateway for
-						shielded Zcash, paid directly or from assets on other chains.
+					<p className="mt-7 max-w-[36rem] text-lg leading-relaxed text-kertas/75">
+						One API for private payments. Every invoice gets its own shielded
+						address, buyers pay in ZEC or from USDC, SOL and BTC through NEAR
+						Intents, and real-time status plus signed webhooks tell you the
+						moment it is LUNAS. Non-custodial: Lunaz holds viewing keys only.
 					</p>
-					<div className="mt-10 flex flex-wrap items-center gap-6">
+					<div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
 						<DemoButton />
 						<a
-							href="#how"
-							className="font-bold text-kertas/80 underline decoration-kertas/30 underline-offset-[6px] transition-colors hover:text-kertas"
+							href="#developers"
+							className="press rounded-full border border-white/20 px-6 py-3.5 font-bold text-kertas transition-colors hover:border-white/40"
 						>
-							See how it works
+							Read the API
 						</a>
 					</div>
+					<p className="mt-7 font-mono text-[13px] text-kertas/50">
+						<span className="text-lunas">POST</span> /v1/invoices{" "}
+						<span className="text-kertas/30">→</span> 201 · address · zip321_uri
+					</p>
 				</div>
-				<div className="lg:col-span-5">
-					<Receipt />
+				<div className="space-y-4 lg:col-span-6">
+					<div className="rounded-2xl border border-white/10 bg-[radial-gradient(rgba(246,242,233,0.07)_1px,transparent_1px)] bg-[size:14px_14px] p-4 sm:p-6">
+						<GatewayFlow />
+					</div>
+					<EventStream />
 				</div>
 			</div>
 		</section>
-	);
-}
-
-/* The logo idea, acted out: a receipt prints, folds over its contents, gets stamped. */
-function Receipt() {
-	const row = "flex justify-between gap-3";
-	return (
-		<figure className="relative mx-auto w-full max-w-[21rem]">
-			<div
-				aria-hidden="true"
-				className="relative z-10 -mx-5 h-5 rounded-full border border-white/10 bg-[#13152c] shadow-[inset_0_3px_6px_rgba(0,0,0,0.5)]"
-			/>
-			<div
-				className="-mt-2.5"
-				style={{ clipPath: "inset(0 -3rem -3rem -3rem)" }}
-			>
-				<div
-					className="anim-print relative font-mono text-[13px] leading-relaxed text-malam"
-					style={{ perspective: "1400px" }}
-				>
-					<div className="h-60 bg-kertas px-6 pb-5 pt-8">
-						<p className="text-center text-sm font-semibold tracking-[0.25em]">
-							KEDAI KOPI
-						</p>
-						<p className="mt-1 text-center text-[11px] text-malam/60">
-							CASHIER 01 · INVOICE #0042
-						</p>
-						<div className="mt-5 border-t border-dashed border-malam/40 pt-3">
-							<p className="text-[11px] text-malam/60">PAY TO (SHIELDED)</p>
-							<p className="break-all">u1x9ph4w0kq7e3lzd52uv8…</p>
-						</div>
-						<div className="mt-4 space-y-0.5 text-malam/80">
-							<p className={row}>
-								<span>NETWORK</span>
-								<span>Zcash · Orchard</span>
-							</p>
-							<p className={row}>
-								<span>MEMO</span>
-								<span>#0042</span>
-							</p>
-						</div>
-					</div>
-					<div className="receipt-flap anim-fold relative h-60">
-						<div className="face absolute inset-0 bg-kertas px-6 pt-4">
-							<div className="border-t border-dashed border-malam/40 pt-3">
-								<p className={row}>
-									<span>2× Kopi susu</span>
-									<span>0.1200</span>
-								</p>
-								<p className={row}>
-									<span>1× Roti bakar</span>
-									<span>0.0800</span>
-								</p>
-								<p className={row}>
-									<span>1× Air mineral</span>
-									<span>0.0500</span>
-								</p>
-							</div>
-							<p
-								className={`${row} mt-3 border-t border-dashed border-malam/40 pt-3 text-base font-semibold`}
-							>
-								<span>TOTAL</span>
-								<span>0.2500 ZEC</span>
-							</p>
-							<p className="mt-3 text-center text-[11px] text-malam/60">
-								THANK YOU
-							</p>
-							<div className="zigzag absolute inset-x-0 -bottom-1.5" />
-						</div>
-						<div className="face face-back absolute inset-0 flex flex-col items-center bg-kertas pt-9">
-							<div className="zigzag zigzag-up absolute inset-x-0 -top-1.5" />
-							<img
-								src="/lunaz-symbol.svg"
-								alt=""
-								width={56}
-								height={56}
-								className="size-14"
-							/>
-							<p className="mt-1 text-[11px] tracking-[0.2em] text-malam/70">
-								PRIVATE BY DEFAULT
-							</p>
-						</div>
-					</div>
-					<div className="anim-stamp absolute left-1/2 top-[8.4rem] z-10 -ml-[6.5rem] w-[13rem] rotate-[-7deg] rounded-lg border-[3px] border-lunas bg-malam py-2 text-center font-sans text-5xl font-extrabold tracking-tight text-lunas shadow-[0_10px_24px_-8px_rgba(28,31,61,0.6)]">
-						LUNAS
-					</div>
-				</div>
-			</div>
-			<figcaption className="anim-late -mt-[14.5rem] pr-2 text-right font-mono text-xs leading-relaxed text-kertas/50">
-				Receipt #0042: paid in full.
-				<br />
-				The fold keeps what was bought to itself.
-			</figcaption>
-		</figure>
 	);
 }
 

@@ -52,12 +52,6 @@ body {
   Motion. Base styles are the final state, so reduced motion (or no
   animation support) simply shows the finished picture.
 */
-@keyframes print {
-  from { transform: translateY(-100%); }
-}
-@keyframes fold {
-  from { transform: rotateX(0deg); }
-}
 @keyframes stamp {
   0% { opacity: 0; transform: scale(1.5) rotate(-7deg); }
   70% { opacity: 1; transform: scale(0.96) rotate(-7deg); }
@@ -89,23 +83,15 @@ body {
   0% { transform: scale(1); opacity: 0.6; }
   100% { transform: scale(2.6); opacity: 0; }
 }
+@keyframes dash-flow {
+  to { stroke-dashoffset: -2.4; }
+}
 @keyframes draw {
   from { stroke-dashoffset: var(--len, 300); }
 }
 
 .seq-travel {
   transform: translateX(var(--d, 0));
-}
-.receipt-flap {
-  transform: rotateX(180deg);
-  transform-origin: top;
-  transform-style: preserve-3d;
-}
-.face {
-  backface-visibility: hidden;
-}
-.face-back {
-  transform: rotateX(180deg);
 }
 
 /* Settled pulse ring on status dots */
@@ -117,14 +103,13 @@ body {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .anim-print { animation: print 1.7s cubic-bezier(0.45, 0.05, 0.25, 1) 0.35s backwards; }
-  .anim-fold { animation: fold 0.9s var(--ease-in-out) 2.45s backwards; }
-  .anim-stamp { animation: stamp 0.42s var(--ease-out) 3.5s backwards; }
+  .node-in { animation: fade 0.6s ease backwards; }
+  .ev-in { animation: fade-up 0.4s var(--ease-out) backwards; }
+  .wire-flow { animation: dash-flow 0.9s linear infinite; }
   .anim-hero-copy > * { animation: fade-up 0.7s var(--ease-out) backwards; }
   .anim-hero-copy > *:nth-child(2) { animation-delay: 80ms; }
   .anim-hero-copy > *:nth-child(3) { animation-delay: 160ms; }
   .anim-hero-copy > *:nth-child(4) { animation-delay: 240ms; }
-  .anim-late { animation: fade 0.6s ease 4s backwards; }
 
   /* One-shot sequences gated by data-on (in view / active step) */
   [data-on="false"] .seq { opacity: 0; }
@@ -187,4 +172,5 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .packets { display: none; }
 }
