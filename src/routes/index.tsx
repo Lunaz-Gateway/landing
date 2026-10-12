@@ -562,9 +562,8 @@ function Footer() {
 						className="h-8 w-auto"
 					/>
 					<p className="mt-5 max-w-md text-sm leading-relaxed text-kertas/60">
-						From the Indonesian "lunas", paid in full, plus z for Zcash. A
-						Zecathon project, built on Zcash shielded pools, NEAR Intents, Zebra
-						and lightwalletd.
+						From the Indonesian "lunas", paid in full, plus z for Zcash. Built
+						on Zcash shielded pools, NEAR Intents, Zebra and lightwalletd.
 					</p>
 				</div>
 				<div className="flex gap-6 text-sm font-bold">
