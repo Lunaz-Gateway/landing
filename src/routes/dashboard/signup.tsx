@@ -5,7 +5,14 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { useState } from "react";
-import { AuthCard, btn, ErrorText, errMsg, Field } from "#/components/dash-ui";
+import {
+	AuthCard,
+	btn,
+	ErrorText,
+	errMsg,
+	Field,
+	PasswordField,
+} from "#/components/dash-ui";
 import { getAccount, signup } from "#/server/dash";
 
 export const Route = createFileRoute("/dashboard/signup")({
@@ -21,7 +28,10 @@ function Signup() {
 	const [error, setError] = useState("");
 	const [busy, setBusy] = useState(false);
 	return (
-		<AuthCard title="Create your account">
+		<AuthCard
+			title="Create your account"
+			subtitle="Add your wallet viewing key next."
+		>
 			<form
 				className="space-y-4"
 				onSubmit={async (e) => {
@@ -52,10 +62,9 @@ function Signup() {
 					autoComplete="email"
 					required
 				/>
-				<Field
+				<PasswordField
 					label="Password"
-					id="password"
-					type="password"
+					hint="At least 8 characters."
 					autoComplete="new-password"
 					minLength={8}
 					required

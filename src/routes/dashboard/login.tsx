@@ -5,7 +5,14 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { useState } from "react";
-import { AuthCard, btn, ErrorText, errMsg, Field } from "#/components/dash-ui";
+import {
+	AuthCard,
+	btn,
+	ErrorText,
+	errMsg,
+	Field,
+	PasswordField,
+} from "#/components/dash-ui";
 import { getAccount, login } from "#/server/dash";
 
 export const Route = createFileRoute("/dashboard/login")({
@@ -21,7 +28,10 @@ function Login() {
 	const [error, setError] = useState("");
 	const [busy, setBusy] = useState(false);
 	return (
-		<AuthCard title="Sign in">
+		<AuthCard
+			title="Sign in to Lunaz"
+			subtitle="Welcome back. Enter your details to continue."
+		>
 			<form
 				className="space-y-4"
 				onSubmit={async (e) => {
@@ -47,10 +57,8 @@ function Login() {
 					autoComplete="email"
 					required
 				/>
-				<Field
+				<PasswordField
 					label="Password"
-					id="password"
-					type="password"
 					autoComplete="current-password"
 					required
 				/>

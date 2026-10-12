@@ -15,7 +15,7 @@ import { btn, btn2, card, ErrorText, errMsg, input } from "./dash-ui";
 
 const th =
 	"px-3 py-2 text-left font-mono text-xs font-medium uppercase tracking-wider text-kertas/60";
-const td = "px-3 py-3 align-top";
+const td = "whitespace-nowrap px-3 py-3 align-top";
 const date = (s: number | null) =>
 	s ? new Date(s * 1000).toISOString().slice(0, 16).replace("T", " ") : "—";
 const zec = (z: number) =>
@@ -348,7 +348,7 @@ export function Webhooks() {
 				<h2 className="mb-2 font-bold">Verify the signature</h2>
 				<p className="mb-3 text-sm text-kertas/70">
 					Each request carries X-Lunaz-Signature, the HMAC-SHA256 hex of the raw
-					body.
+					body. The JSON body has a type field, such as invoice.paid.
 				</p>
 				<pre className="overflow-x-auto rounded-xl border border-white/10 bg-malam-2 p-4 font-mono text-xs leading-relaxed">
 					{SNIPPET}
