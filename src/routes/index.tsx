@@ -116,6 +116,9 @@ function Nav() {
 					<a className={`${link} hidden md:inline`} href={GITHUB}>
 						GitHub
 					</a>
+					<a className={link} href="/dashboard">
+						Dashboard
+					</a>
 					<a
 						href={DEMO}
 						className="press rounded-full bg-lunas px-4 py-2 font-bold text-malam"
