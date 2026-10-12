@@ -208,17 +208,22 @@ function Stats({ invoices }: { invoices: Invoice[] }) {
 	const pending = invoices.filter(
 		(i) => i.status === "pending" || i.status === "detected",
 	).length;
+	const underpaid = invoices.filter((i) => i.status === "underpaid").length;
 	const received = invoices.reduce((t, i) => t + i.received_zat, 0);
 	const stats = [
 		["Invoices paid", String(paid.length)],
 		["Pending", String(pending)],
+		...(underpaid > 0 ? [["Underpaid", String(underpaid)]] : []),
 		["Total received", `${zec(received)} ZEC`],
 	];
 	return (
 		<section aria-label="Invoice stats">
-			<dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+			<dl className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))]">
 				{stats.map(([k, v]) => (
-					<div key={k} className={`${card} last:col-span-2 sm:last:col-span-1`}>
+					<div
+						key={k}
+						className={`${card} last:odd:col-span-2 sm:last:col-span-1`}
+					>
 						<dt className="text-sm text-kertas/70">{k}</dt>
 						<dd className="mt-1 font-mono text-2xl font-semibold">{v}</dd>
 					</div>

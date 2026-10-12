@@ -3,8 +3,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	type ApiKey,
 	createKey,
+	type Delivery,
 	getWebhook,
 	type Invoice,
+	listDeliveries,
 	listInvoices,
 	listKeys,
 	revokeKey,
@@ -381,11 +383,14 @@ export function Webhooks() {
 				)}
 			</section>
 
+			<Deliveries />
+
 			<section>
 				<h2 className="mb-2 font-bold">Verify the signature</h2>
 				<p className="mb-3 text-sm text-kertas/70">
 					Each request carries X-Lunaz-Signature, the HMAC-SHA256 hex of the raw
-					body. The JSON body has a type field, such as invoice.paid.
+					body. The JSON body has a type field: invoice.paid, invoice.underpaid,
+					swap.refunded, swap.failed, swap.incomplete_deposit or test.
 				</p>
 				<pre className="overflow-x-auto rounded-xl border border-white/10 bg-malam-2 p-4 font-mono text-xs leading-relaxed">
 					{SNIPPET}
@@ -395,10 +400,60 @@ export function Webhooks() {
 	);
 }
 
+function Deliveries() {
+	const { data, error, reload } = useLoad(() => listDeliveries());
+	return (
+		<section className="space-y-3">
+			<div className="flex items-center justify-between gap-3">
+				<h2 className="font-bold">Recent deliveries</h2>
+				<button type="button" className={btn2} onClick={() => reload()}>
+					Refresh
+				</button>
+			</div>
+			<ErrorText error={error} />
+			{data?.length === 0 && (
+				<p className={`${card} text-sm text-kertas/80`}>
+					No deliveries yet. Send a test or wait for an invoice event.
+				</p>
+			)}
+			{data && data.length > 0 && (
+				<div className="overflow-x-auto rounded-xl border border-white/10 bg-malam-2/60">
+					<table className="w-full text-sm">
+						<caption className="sr-only">Recent webhook deliveries</caption>
+						<thead className="border-b border-white/10">
+							<tr>
+								<th className={th}>Time</th>
+								<th className={th}>Type</th>
+								<th className={th}>Result</th>
+								<th className={th}>Attempt</th>
+							</tr>
+						</thead>
+						<tbody className="divide-y divide-white/10">
+							{data.map((d: Delivery) => (
+								<tr key={d.id}>
+									<td className={td}>{date(d.created_at)}</td>
+									<td className={`${td} font-mono`} title={d.url}>
+										{d.type}
+									</td>
+									<td className={`${td} font-mono`}>
+										{d.status_code ?? d.error ?? "—"}
+									</td>
+									<td className={`${td} font-mono`}>#{d.attempt}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			)}
+		</section>
+	);
+}
+
 const pill: Record<Invoice["status"], string> = {
 	pending: "border-white/30 text-kertas/80",
 	detected: "border-white/50 text-kertas",
 	paid: "border-lunas text-lunas",
+	underpaid: "border-[#ffb86b] text-[#ffb86b]",
 	expired: "border-white/15 text-kertas/50",
 };
 
@@ -438,6 +493,7 @@ export function Invoices() {
 								<th className={th}>Amount (ZEC)</th>
 								<th className={th}>Status</th>
 								<th className={th}>Received</th>
+								<th className={th}>Overpaid</th>
 								<th className={th}>Txid</th>
 							</tr>
 						</thead>
@@ -454,6 +510,9 @@ export function Invoices() {
 										</span>
 									</td>
 									<td className={`${td} font-mono`}>{zec(i.received_zat)}</td>
+									<td className={`${td} font-mono`}>
+										{i.overpaid_zat > 0 ? zec(i.overpaid_zat) : "—"}
+									</td>
 									<td className={`${td} font-mono`} title={i.txid ?? undefined}>
 										{i.txid ? `${i.txid.slice(0, 8)}…${i.txid.slice(-6)}` : "—"}
 									</td>

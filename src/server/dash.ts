@@ -26,9 +26,10 @@ export type ApiKey = {
 };
 export type Invoice = {
 	id: string;
-	status: "pending" | "detected" | "paid" | "expired";
+	status: "pending" | "detected" | "paid" | "underpaid" | "expired";
 	amount_zat: number;
 	received_zat: number;
+	overpaid_zat: number;
 	address: string;
 	txid: string | null;
 	created_at: number;
@@ -204,4 +205,20 @@ export const testWebhook = createServerFn({ method: "POST" }).handler(
 
 export const listInvoices = createServerFn({ method: "GET" }).handler(
 	async () => (await authed("/v1/account/invoices?limit=50")) as Invoice[],
+);
+
+export type Delivery = {
+	id: string;
+	invoice_id: string | null;
+	type: string;
+	url: string;
+	status_code: number | null;
+	error: string | null;
+	attempt: number;
+	created_at: number;
+};
+
+export const listDeliveries = createServerFn({ method: "GET" }).handler(
+	async () =>
+		(await authed("/v1/account/webhook/deliveries?limit=50")) as Delivery[],
 );
