@@ -1,194 +1,84 @@
-Welcome to your new TanStack Start app!
+# Lunaz landing
 
-# Getting Started
+Marketing site and developer dashboard for Lunaz, a Zcash payment gateway. Built with TanStack Start (React 19), Vite 8, Tailwind 4 and Biome. The package manager is bun.
 
-To run this application:
+## Features
+
+- Marketing page at `/` with a link to the demo store.
+- Signup and login (`/dashboard/signup`, `/dashboard/login`).
+- Viewing key (UFVK) onboarding, so the gateway can watch for payments without spend authority.
+- API keys: create (shown once) and revoke.
+- Webhook endpoint, signing secret rotation, test delivery and a delivery log.
+- Invoices list with status, received and overpaid amounts.
+- Accountant CSV export.
+
+## Architecture
+
+```
+browser --> TanStack Start server functions (src/server/dash.ts) --> core-service (/v1/...)
+```
+
+- The browser never talks to core-service. All calls go through server functions.
+- The core-service session token is stored in an `httpOnly`, `SameSite=Lax` cookie (`lunaz_session`, 7 days). It is `Secure` when `NODE_ENV=production`. Client code never sees the token.
+- A 401 from core-service clears the cookie.
+
+## Environment
+
+| Variable | Where | Description |
+| --- | --- | --- |
+| `LUNAZ_API_URL` | server, runtime | core-service base URL (default `http://127.0.0.1:8097`) |
+| `VITE_DEMO_URL` | public, build time | URL of the demo app behind "Try the demo" (default `http://localhost:3000`) |
+
+`VITE_*` values are baked into the client bundle at build time and are public. Do not put secrets there.
+
+## Local development
 
 ```bash
+cp .env.example .env
 bun install
-bun --bun run dev
+bun run dev        # http://localhost:3000 (use --port 3001 if the demo app runs on 3000)
+bun run check      # biome
 ```
 
-# Building For Production
+## Production build and Docker
 
-To build this application for production:
+`bun run build` writes `dist/client` (static assets) and `dist/server/server.js` (a fetch handler). `server.mjs` serves both with [srvx](https://srvx.h3.dev) on `HOST:PORT` (default `0.0.0.0:3000`). It runs on Node 22.
+
+The image is multi-stage and the final stage is `distroless/nodejs22-debian12:nonroot`: no shell, no package manager, non-root user. `.env*` files are excluded by `.dockerignore` and never enter an image layer. It has a built-in `HEALTHCHECK` that requests `/`.
 
 ```bash
-bun --bun run build
+docker build --build-arg VITE_DEMO_URL=https://demo.example.com -t lunaz-landing .
+
+docker run -d --name lunaz-landing --read-only --tmpfs /tmp --cap-drop ALL \
+  --security-opt no-new-privileges:true --pids-limit 256 --memory 512m \
+  -p 127.0.0.1:3000:3000 -e LUNAZ_API_URL=http://core:8080 \
+  --restart unless-stopped lunaz-landing
 ```
 
-## Styling
+Compose:
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
-
-## Linting & Formatting
-
-This project uses [Biome](https://biomejs.dev/) for linting and formatting. The following scripts are available:
-
-
-```bash
-bun --bun run lint
-bun --bun run format
-bun --bun run check
+```yaml
+services:
+  landing:
+    build:
+      context: .
+      args:
+        VITE_DEMO_URL: https://demo.example.com
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    mem_limit: 512m
+    ports: ["127.0.0.1:3000:3000"]
+    environment:
+      LUNAZ_API_URL: http://core:8080
+    restart: unless-stopped
 ```
 
+## Deploy notes
 
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+- Serve it over HTTPS. The session cookie is `Secure` in production, so login does not work over plain HTTP (except on `localhost` in most browsers).
+- Put a TLS reverse proxy (Caddy, nginx, Traefik) in front and publish the container on `127.0.0.1` only.
+- The container must reach core-service at `LUNAZ_API_URL`. That URL is internal and is never sent to the browser.
+- Changing `VITE_DEMO_URL` requires a rebuild.
