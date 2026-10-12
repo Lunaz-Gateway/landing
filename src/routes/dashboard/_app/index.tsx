@@ -21,7 +21,10 @@ export const Route = createFileRoute("/dashboard/_app/")({
 		<PageSkeleton title="Overview">
 			<div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
 				{[0, 1, 2].map((i) => (
-					<Skeleton key={i} className="h-[118px] w-full rounded-xl" />
+					<Skeleton
+						key={i}
+						className={`h-[118px] w-full rounded-xl ${i === 2 ? "col-span-2 lg:col-span-1" : ""}`}
+					/>
 				))}
 			</div>
 			<TableSkeleton rows={5} cols={4} />

@@ -546,13 +546,8 @@ export function Webhooks({
 						>
 							{deliveries.map((d) => (
 								<tr key={d.id}>
-									<td
-										className={`${td} font-mono text-[13px]`}
-										data-label="Event"
-									>
-										{d.type}
-									</td>
-									<td className={td} data-label="Result">
+									<td className={`${td} font-mono text-[13px]`}>{d.type}</td>
+									<td className={td} data-sm-end>
 										{okCode(d.status_code) ? (
 											<Badge tone="success">{d.status_code} OK</Badge>
 										) : (
@@ -569,7 +564,11 @@ export function Webhooks({
 											</span>
 										)}
 									</td>
-									<td className={td}>
+									<td
+										className={td}
+										data-label="Invoice"
+										data-sm-hide={!d.invoice_id || undefined}
+									>
 										{d.invoice_id ? (
 											<Link
 												to="/dashboard/invoices"
