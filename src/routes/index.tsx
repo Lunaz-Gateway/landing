@@ -132,21 +132,21 @@ function Hero() {
 	return (
 		<section className="overflow-hidden bg-malam">
 			<div
-				className={`${wrap} grid items-center gap-12 pb-20 pt-12 sm:pt-16 lg:grid-cols-12 lg:gap-10 lg:pb-28 lg:pt-20`}
+				className={`${wrap} grid items-center gap-12 pb-20 pt-12 sm:pt-16 lg:grid-cols-12 lg:gap-8 lg:pb-28 lg:pt-16`}
 			>
 				<div className="anim-hero-copy lg:col-span-6">
-					<p className={`${kicker} text-lunas`}>
-						Payment gateway API for shielded Zcash
-					</p>
-					<h1 className="mt-6 text-[clamp(2.75rem,4.4vw,4.6rem)] font-extrabold leading-[0.95] tracking-[-0.045em]">
-						Pay with anything.
-						<span className="block text-lunas">Settled in private.</span>
+					<h1 className="text-[clamp(3.1rem,6.4vw,6rem)] font-extrabold leading-[0.92] tracking-[-0.045em]">
+						Pay with
+						<br />
+						anything.
+						<span className="mt-3 block text-lunas sm:pl-[0.9em]">
+							Settled in private.
+						</span>
 					</h1>
-					<p className="mt-7 max-w-[36rem] text-lg leading-relaxed text-kertas/75">
-						One API for private payments. Every invoice gets its own shielded
-						address, buyers pay in ZEC or from USDC, SOL and BTC through NEAR
-						Intents, and real-time status plus signed webhooks tell you the
-						moment it is LUNAS. Non-custodial: Lunaz holds viewing keys only.
+					<p className="mt-8 max-w-[30rem] text-lg leading-relaxed text-kertas/75">
+						A payment gateway for shielded Zcash. Take ZEC, or USDC, SOL and BTC
+						through NEAR Intents, know the moment it is paid, and never hand
+						over your keys.
 					</p>
 					<div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
 						<DemoButton />
