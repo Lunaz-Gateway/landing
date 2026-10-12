@@ -7,10 +7,10 @@ import {
 import { useState } from "react";
 import {
 	AuthCard,
-	btn,
+	Button,
 	ErrorText,
 	errMsg,
-	Field,
+	Input,
 	PasswordField,
 } from "#/components/dash-ui";
 import { getAccount, signup } from "#/server/dash";
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/dashboard/signup")({
 	beforeLoad: async () => {
 		if (await getAccount()) throw redirect({ to: "/dashboard" });
 	},
-	head: () => ({ meta: [{ title: "Create account — Lunaz" }] }),
+	head: () => ({ meta: [{ title: "Create account · Lunaz Dashboard" }] }),
 	component: Signup,
 });
 
@@ -54,8 +54,14 @@ function Signup() {
 					}
 				}}
 			>
-				<Field label="Name" id="name" autoComplete="name" required />
-				<Field
+				<Input
+					label="Name"
+					id="name"
+					autoComplete="name"
+					hint="Your business or project name."
+					required
+				/>
+				<Input
 					label="Email"
 					id="email"
 					type="email"
@@ -70,13 +76,22 @@ function Signup() {
 					required
 				/>
 				<ErrorText error={error} />
-				<button type="submit" className={`${btn} w-full`} disabled={busy}>
-					{busy ? "Creating…" : "Create account"}
-				</button>
+				<Button
+					type="submit"
+					variant="primary"
+					size="lg"
+					className="w-full"
+					pending={busy}
+				>
+					{busy ? "Creating account…" : "Create account"}
+				</Button>
 			</form>
-			<p className="mt-5 text-sm text-kertas/70">
+			<p className="mt-6 text-sm text-kertas/65">
 				Already registered?{" "}
-				<Link to="/dashboard/login" className="font-bold text-kertas underline">
+				<Link
+					to="/dashboard/login"
+					className="dash-focus rounded-sm font-bold text-kertas underline underline-offset-2"
+				>
 					Sign in
 				</Link>
 			</p>

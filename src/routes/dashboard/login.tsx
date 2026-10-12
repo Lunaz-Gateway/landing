@@ -7,30 +7,44 @@ import {
 import { useState } from "react";
 import {
 	AuthCard,
-	btn,
+	Button,
 	ErrorText,
 	errMsg,
-	Field,
+	Icon,
+	Input,
 	PasswordField,
 } from "#/components/dash-ui";
 import { getAccount, login } from "#/server/dash";
 
 export const Route = createFileRoute("/dashboard/login")({
+	validateSearch: (s: Record<string, unknown>): { expired?: boolean } => ({
+		expired: s.expired === true || s.expired === "true" ? true : undefined,
+	}),
 	beforeLoad: async () => {
 		if (await getAccount()) throw redirect({ to: "/dashboard" });
 	},
-	head: () => ({ meta: [{ title: "Sign in — Lunaz" }] }),
+	head: () => ({ meta: [{ title: "Sign in · Lunaz Dashboard" }] }),
 	component: Login,
 });
 
 function Login() {
 	const navigate = useNavigate();
+	const { expired } = Route.useSearch();
 	const [error, setError] = useState("");
 	const [busy, setBusy] = useState(false);
 	return (
 		<AuthCard
 			title="Sign in to Lunaz"
 			subtitle="Welcome back. Enter your details to continue."
+			notice={
+				expired &&
+				!error && (
+					<output className="mb-5 flex items-start gap-2 rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-2.5 text-sm">
+						<Icon name="alert" className="mt-0.5 size-4 text-[#ffc685]" />
+						Your session expired. Sign in again to continue.
+					</output>
+				)
+			}
 		>
 			<form
 				className="space-y-4"
@@ -50,7 +64,7 @@ function Login() {
 					}
 				}}
 			>
-				<Field
+				<Input
 					label="Email"
 					id="email"
 					type="email"
@@ -63,15 +77,21 @@ function Login() {
 					required
 				/>
 				<ErrorText error={error} />
-				<button type="submit" className={`${btn} w-full`} disabled={busy}>
+				<Button
+					type="submit"
+					variant="primary"
+					size="lg"
+					className="w-full"
+					pending={busy}
+				>
 					{busy ? "Signing in…" : "Sign in"}
-				</button>
+				</Button>
 			</form>
-			<p className="mt-5 text-sm text-kertas/70">
+			<p className="mt-6 text-sm text-kertas/65">
 				No account?{" "}
 				<Link
 					to="/dashboard/signup"
-					className="font-bold text-kertas underline"
+					className="dash-focus rounded-sm font-bold text-kertas underline underline-offset-2"
 				>
 					Create one
 				</Link>
