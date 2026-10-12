@@ -400,7 +400,7 @@ export function PageHeader({
 			<div className="min-w-0">
 				<h1 className="text-2xl font-bold tracking-[-0.02em]">{title}</h1>
 				{description && (
-					<p className="mt-1 text-sm text-kertas/65">{description}</p>
+					<div className="mt-1 min-h-5 text-sm text-kertas/65">{description}</div>
 				)}
 			</div>
 			{actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -721,12 +721,13 @@ export function useAction() {
 	async function run<T>(
 		key: string,
 		fn: () => Promise<T>,
-		ok?: string | ((r: T) => string),
+		ok?: string | ((r: T) => string | [string, ToastT["tone"]]),
 	): Promise<T | undefined> {
 		setBusy(key);
 		try {
 			const r = await fn();
-			if (ok) toast(typeof ok === "string" ? ok : ok(r));
+			const m = typeof ok === "function" ? ok(r) : ok;
+			if (m) Array.isArray(m) ? toast(...m) : toast(m);
 			return r;
 		} catch (e) {
 			if (isRedirect(e)) {
@@ -1074,7 +1075,11 @@ export function PageError({ error, reset }: ErrorComponentProps) {
 				</>
 			}
 		>
-			<p>{errMsg(error)}</p>
+			<p>
+				{/fetch|network/i.test(errMsg(error))
+					? "Couldn't reach the server. Check your connection."
+					: errMsg(error)}
+			</p>
 			<p className="mt-1">
 				If this keeps happening, the Lunaz API may be down.
 			</p>

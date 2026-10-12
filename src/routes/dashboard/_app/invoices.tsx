@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import {
 	type InvoiceSearch,
 	Invoices,
@@ -8,6 +8,8 @@ import { PageError } from "#/components/dash-ui";
 import { listInvoices } from "#/server/dash";
 
 const STATUSES = ["paid", "pending", "detected", "underpaid", "expired"];
+
+const useAccount = () => getRouteApi("/dashboard/_app").useLoaderData();
 
 export const Route = createFileRoute("/dashboard/_app/invoices")({
 	validateSearch: (s: Record<string, unknown>): InvoiceSearch => ({
@@ -28,7 +30,7 @@ export const Route = createFileRoute("/dashboard/_app/invoices")({
 
 function Page() {
 	const navigate = Route.useNavigate();
-	const { account } = Route.useRouteContext();
+	const account = useAccount();
 	return (
 		<Invoices
 			invoices={Route.useLoaderData()}

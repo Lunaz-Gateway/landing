@@ -77,15 +77,18 @@ async function call(
 	return data;
 }
 
-const expired = () => {
+const expired = (stale = true) => {
 	deleteCookie(COOKIE, { path: "/" });
-	return redirect({ to: "/dashboard/login", search: { expired: true } });
+	return redirect({
+		to: "/dashboard/login",
+		search: { expired: stale || undefined },
+	});
 };
 
 // Authenticated call; an expired session clears the cookie and sends the user to sign in
 async function authed(path: string, method = "GET", body?: unknown) {
 	const token = getCookie(COOKIE);
-	if (!token) throw expired();
+	if (!token) throw expired(false);
 	try {
 		return await call(path, method, body, token);
 	} catch (e) {
@@ -139,11 +142,20 @@ export const logout = createServerFn({ method: "POST" }).handler(async () => {
 	return { ok: true };
 });
 
-// Null when signed out; a stale session redirects to sign in with a notice
+// Null when signed out or the session is stale (never redirects, so auth pages can call it)
 export const getAccount = createServerFn({ method: "GET" }).handler(
 	async (): Promise<Account | null> => {
-		if (!getCookie(COOKIE)) return null;
-		return (await authed("/v1/account")) as Account;
+		const token = getCookie(COOKIE);
+		if (!token) return null;
+		try {
+			return (await call("/v1/account", "GET", undefined, token)) as Account;
+		} catch (e) {
+			if (e instanceof ApiError && e.status === 401) {
+				deleteCookie(COOKIE, { path: "/" });
+				return null;
+			}
+			throw e;
+		}
 	},
 );
 
@@ -254,7 +266,7 @@ export const exportCsv = createServerFn({ method: "POST" })
 	.inputValidator(input)
 	.handler(async ({ data }) => {
 		const token = getCookie(COOKIE);
-		if (!token) throw expired();
+		if (!token) throw expired(false);
 		const q = new URLSearchParams({ kind: str(data.kind) });
 		for (const k of ["from", "to"] as const)
 			if (Number.isFinite(Number(data[k])) && data[k] !== "")

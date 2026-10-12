@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	getRouteApi,
+	useNavigate,
+} from "@tanstack/react-router";
 import {
 	Badge,
 	Button,
@@ -7,6 +11,8 @@ import {
 	useAction,
 } from "#/components/dash-ui";
 import { logout } from "#/server/dash";
+
+const useAccount = () => getRouteApi("/dashboard/_app").useLoaderData();
 
 export const Route = createFileRoute("/dashboard/_app/settings")({
 	head: () => ({ meta: [{ title: "Settings · Lunaz Dashboard" }] }),
@@ -29,7 +35,7 @@ function Item({
 }
 
 function Settings() {
-	const { account } = Route.useRouteContext();
+	const account = useAccount();
 	const navigate = useNavigate();
 	const { run, busy } = useAction();
 	return (

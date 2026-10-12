@@ -1,8 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { Overview } from "#/components/dash-overview";
 import { PageSkeleton, TableSkeleton } from "#/components/dash-sections";
 import { PageError, Skeleton } from "#/components/dash-ui";
 import { getWebhook, listInvoices, listKeys } from "#/server/dash";
+
+const useAccount = () => getRouteApi("/dashboard/_app").useLoaderData();
 
 export const Route = createFileRoute("/dashboard/_app/")({
 	loader: async () => {
@@ -30,6 +32,6 @@ export const Route = createFileRoute("/dashboard/_app/")({
 });
 
 function Page() {
-	const { account } = Route.useRouteContext();
+	const account = useAccount();
 	return <Overview {...Route.useLoaderData()} account={account} />;
 }

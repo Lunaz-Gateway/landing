@@ -142,7 +142,10 @@ export function PageSkeleton({
 	return (
 		<div aria-busy="true">
 			<output className="sr-only">Loading {title}…</output>
-			<PageHeader title={title} />
+			<PageHeader
+				title={title}
+				description={<Skeleton className="mt-1.5 h-3.5 w-64 max-w-full" />}
+			/>
 			<div className="space-y-6">{children ?? <TableSkeleton />}</div>
 		</div>
 	);
@@ -437,7 +440,17 @@ export function Webhooks({
 								disabled={!webhook.url || dirty}
 								onClick={async () => {
 									setTest(null);
-									const r = await run("test", () => testWebhook());
+									const r = await run(
+										"test",
+										() => testWebhook(),
+										(r) =>
+											okCode(r.status)
+												? "Test event delivered"
+												: [
+														`Test failed: endpoint answered ${r.status}`,
+														"error",
+													],
+									);
 									if (!r) return;
 									const ok = okCode(r.status);
 									setTest({
@@ -689,6 +702,7 @@ function ExportDialog({
 			open={open}
 			onClose={onClose}
 			title="Export CSV"
+			initialFocus="#exp-from"
 			description="For your accountant. Built from your viewing key; this data is not public."
 			footer={
 				<>
@@ -797,6 +811,7 @@ function InvoiceDrawer({
 			open={!!invoice}
 			onClose={onClose}
 			variant="sheet"
+			initialFocus="[aria-label=Close]"
 			title="Invoice"
 			description={
 				i && <Mono value={i.id} head={8} tail={4} label="Copy invoice ID" />
@@ -1019,7 +1034,7 @@ export function Invoices({
 							{FILTERS.map((f) => (
 								<label
 									key={f}
-									className="dash-focus flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-kertas/65 capitalize transition-colors hover:text-kertas has-[:checked]:bg-white/[0.09] has-[:checked]:font-medium has-[:checked]:text-kertas has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-lunas"
+									className="dash-focus relative flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-kertas/65 capitalize transition-colors hover:text-kertas has-[:checked]:bg-white/[0.09] has-[:checked]:font-medium has-[:checked]:text-kertas has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-lunas"
 								>
 									<input
 										type="radio"

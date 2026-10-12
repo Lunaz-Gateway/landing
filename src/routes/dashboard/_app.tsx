@@ -22,10 +22,11 @@ import {
 import { type Account, getAccount, logout } from "#/server/dash";
 
 export const Route = createFileRoute("/dashboard/_app")({
-	beforeLoad: async () => {
+	// A loader (not beforeLoad) so it runs in parallel with the page loaders
+	loader: async () => {
 		const account = await getAccount();
 		if (!account) throw redirect({ to: "/dashboard/login" });
-		return { account };
+		return account;
 	},
 	component: Shell,
 	errorComponent: DashError,
@@ -124,7 +125,7 @@ function Sidebar({ account }: { account: Account }) {
 }
 
 function Shell() {
-	const { account } = Route.useRouteContext();
+	const account = Route.useLoaderData();
 	const path = useRouterState({
 		select: (s) => s.location.pathname.replace(/\/$/, "") || "/",
 	});
@@ -150,6 +151,7 @@ function Shell() {
 				onClose={() => setOpen(false)}
 				variant="nav"
 				labelledBy="nav-label"
+				initialFocus="[aria-current=page]"
 			>
 				<span id="nav-label" className="sr-only">
 					Menu

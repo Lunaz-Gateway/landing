@@ -395,7 +395,7 @@ function QuickActions({ hasWebhook }: { hasWebhook: boolean }) {
 								(r) =>
 									r.status >= 200 && r.status < 300
 										? `Test delivered (${r.status})`
-										: `Your endpoint answered ${r.status}`,
+										: [`Test failed: endpoint answered ${r.status}`, "error"],
 							)
 						}
 					>
