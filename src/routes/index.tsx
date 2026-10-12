@@ -157,10 +157,6 @@ function Hero() {
 							Read the API
 						</a>
 					</div>
-					<p className="mt-7 font-mono text-[13px] text-kertas/50">
-						<span className="text-lunas">POST</span> /v1/invoices{" "}
-						<span className="text-kertas/30">→</span> 201 · address · zip321_uri
-					</p>
 				</div>
 				<div className="space-y-4 lg:col-span-6">
 					<div className="rounded-2xl border border-white/10 bg-[radial-gradient(rgba(246,242,233,0.07)_1px,transparent_1px)] bg-[size:14px_14px] p-4 sm:p-6">
