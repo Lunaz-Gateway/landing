@@ -1,3 +1,4 @@
+import { redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import {
 	deleteCookie,
@@ -76,15 +77,19 @@ async function call(
 	return data;
 }
 
-// Authenticated call; an expired session clears the cookie
+const expired = () => {
+	deleteCookie(COOKIE, { path: "/" });
+	return redirect({ to: "/dashboard/login", search: { expired: true } });
+};
+
+// Authenticated call; an expired session clears the cookie and sends the user to sign in
 async function authed(path: string, method = "GET", body?: unknown) {
 	const token = getCookie(COOKIE);
-	if (!token) throw new ApiError("Not signed in", 401);
+	if (!token) throw expired();
 	try {
 		return await call(path, method, body, token);
 	} catch (e) {
-		if (e instanceof ApiError && e.status === 401)
-			deleteCookie(COOKIE, { path: "/" });
+		if (e instanceof ApiError && e.status === 401) throw expired();
 		throw e;
 	}
 }
@@ -134,16 +139,11 @@ export const logout = createServerFn({ method: "POST" }).handler(async () => {
 	return { ok: true };
 });
 
-// Returns null when signed out; other failures bubble up
+// Null when signed out; a stale session redirects to sign in with a notice
 export const getAccount = createServerFn({ method: "GET" }).handler(
 	async (): Promise<Account | null> => {
 		if (!getCookie(COOKIE)) return null;
-		try {
-			return (await authed("/v1/account")) as Account;
-		} catch (e) {
-			if (e instanceof ApiError && e.status === 401) return null;
-			throw e;
-		}
+		return (await authed("/v1/account")) as Account;
 	},
 );
 
@@ -204,8 +204,34 @@ export const testWebhook = createServerFn({ method: "POST" }).handler(
 );
 
 export const listInvoices = createServerFn({ method: "GET" }).handler(
-	async () => (await authed("/v1/account/invoices?limit=50")) as Invoice[],
+	async () => (await authed("/v1/account/invoices?limit=200")) as Invoice[],
 );
+
+export type InvoiceDetail = {
+	zip321_uri: string | null;
+	swap: {
+		status: string;
+		symbol: string;
+		blockchain: string;
+		deposit_address: string;
+		amount_in_formatted: string;
+		deadline: string;
+	} | null;
+};
+
+// Swap and payment-URI details for one of the merchant's invoices
+export const getInvoice = createServerFn({ method: "GET" })
+	.inputValidator(input)
+	.handler(async ({ data }) => {
+		const id = str(data.id);
+		const mine = (await authed("/v1/account/invoices?limit=200")) as Invoice[];
+		if (!mine.some((i) => i.id === id))
+			throw new ApiError("Invoice not found", 404);
+		const d = (await call(
+			`/v1/invoices/${encodeURIComponent(id)}`,
+		)) as InvoiceDetail;
+		return { zip321_uri: d.zip321_uri, swap: d.swap };
+	});
 
 export type Delivery = {
 	id: string;
@@ -228,7 +254,7 @@ export const exportCsv = createServerFn({ method: "POST" })
 	.inputValidator(input)
 	.handler(async ({ data }) => {
 		const token = getCookie(COOKIE);
-		if (!token) throw new ApiError("Not signed in", 401);
+		if (!token) throw expired();
 		const q = new URLSearchParams({ kind: str(data.kind) });
 		for (const k of ["from", "to"] as const)
 			if (Number.isFinite(Number(data[k])) && data[k] !== "")
@@ -243,7 +269,7 @@ export const exportCsv = createServerFn({ method: "POST" })
 		}
 		const text = await res.text();
 		if (!res.ok) {
-			if (res.status === 401) deleteCookie(COOKIE, { path: "/" });
+			if (res.status === 401) throw expired();
 			let msg = `Export failed (${res.status})`;
 			try {
 				msg = JSON.parse(text).error ?? msg;
