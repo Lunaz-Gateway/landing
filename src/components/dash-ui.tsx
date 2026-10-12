@@ -400,7 +400,9 @@ export function PageHeader({
 			<div className="min-w-0">
 				<h1 className="text-2xl font-bold tracking-[-0.02em]">{title}</h1>
 				{description && (
-					<div className="mt-1 min-h-5 text-sm text-kertas/65">{description}</div>
+					<div className="mt-1 min-h-5 text-sm text-kertas/65">
+						{description}
+					</div>
 				)}
 			</div>
 			{actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -541,10 +543,14 @@ export function Dialog({
 		if (!d) return;
 		if (open && !d.open) {
 			d.showModal();
-			if (initialFocus)
-				d.querySelector<HTMLElement>(initialFocus)?.focus({
-					preventScroll: true,
-				});
+			// "self" parks focus on the dialog so Tab starts at its first control
+			const el =
+				initialFocus === "self"
+					? d
+					: initialFocus
+						? d.querySelector<HTMLElement>(initialFocus)
+						: null;
+			el?.focus({ preventScroll: true });
 		} else if (!open && d.open) d.close();
 	}, [open, initialFocus]);
 	return (
@@ -552,6 +558,7 @@ export function Dialog({
 		<dialog
 			ref={ref}
 			className={`dash-dialog dash-dialog-${variant}`}
+			tabIndex={-1}
 			aria-labelledby={labelledBy ?? (title ? hid : undefined)}
 			onClose={onClose}
 			onClick={(e) => {

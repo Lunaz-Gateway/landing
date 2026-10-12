@@ -151,7 +151,7 @@ function Shell() {
 				onClose={() => setOpen(false)}
 				variant="nav"
 				labelledBy="nav-label"
-				initialFocus="[aria-current=page]"
+				initialFocus="nav [aria-current=page]"
 			>
 				<span id="nav-label" className="sr-only">
 					Menu

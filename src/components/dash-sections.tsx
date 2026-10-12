@@ -569,7 +569,7 @@ export function Webhooks({
 											</span>
 										)}
 									</td>
-									<td className={td} data-label="Invoice">
+									<td className={td}>
 										{d.invoice_id ? (
 											<Link
 												to="/dashboard/invoices"
@@ -811,7 +811,7 @@ function InvoiceDrawer({
 			open={!!invoice}
 			onClose={onClose}
 			variant="sheet"
-			initialFocus="[aria-label=Close]"
+			initialFocus="self"
 			title="Invoice"
 			description={
 				i && <Mono value={i.id} head={8} tail={4} label="Copy invoice ID" />
@@ -1103,7 +1103,7 @@ export function Invoices({
 											setSearch({ ...search, id: i.id });
 									}}
 								>
-									<td className={td} data-label="Invoice">
+									<td className={td}>
 										<button
 											type="button"
 											className="dash-focus rounded-sm font-mono text-[13px] underline decoration-white/20 underline-offset-2 hover:decoration-kertas"
@@ -1113,7 +1113,7 @@ export function Invoices({
 											{i.id.slice(0, 8)}
 										</button>
 									</td>
-									<td className={td} data-label="Status">
+									<td className={td} data-sm-end>
 										<StatusPill status={i.status} />
 									</td>
 									<td

@@ -334,7 +334,7 @@ function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
 			>
 				{invoices.slice(0, 5).map((i) => (
 					<tr key={i.id}>
-						<td className={td} data-label="Invoice">
+						<td className={td}>
 							<Link
 								to="/dashboard/invoices"
 								search={{ id: i.id }}
@@ -343,7 +343,7 @@ function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
 								{i.id.slice(0, 8)}
 							</Link>
 						</td>
-						<td className={td} data-label="Status">
+						<td className={td} data-sm-end>
 							<StatusPill status={i.status} />
 						</td>
 						<td className={`${td} text-right`} data-label="Amount" data-end>

@@ -256,6 +256,7 @@ input[type="date"] { color-scheme: dark; }
   }
   .dash-table td[data-wide] { grid-column: 1 / -1; }
   .dash-table td[data-sm-hide] { display: none; }
+  .dash-table td[data-sm-end] { justify-self: end; }
   .dash-table td[data-end] { text-align: left !important; }
 }
 
@@ -272,6 +273,7 @@ input[type="date"] { color-scheme: dark; }
 }
 .dash-dialog > div { max-height: calc(100dvh - 2rem); }
 .dash-dialog::backdrop { background: rgb(10 11 28 / 0.6); }
+.dash-dialog:focus { outline: none; }
 .dash-dialog-modal { width: min(30rem, calc(100vw - 2rem)); border-radius: 14px; }
 .dash-dialog-sheet, .dash-dialog-nav {
   margin: 0;
