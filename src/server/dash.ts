@@ -222,3 +222,36 @@ export const listDeliveries = createServerFn({ method: "GET" }).handler(
 	async () =>
 		(await authed("/v1/account/webhook/deliveries?limit=50")) as Delivery[],
 );
+
+// CSV text and suggested filename; the file is built from the viewing key and never public
+export const exportCsv = createServerFn({ method: "POST" })
+	.inputValidator(input)
+	.handler(async ({ data }) => {
+		const token = getCookie(COOKIE);
+		if (!token) throw new ApiError("Not signed in", 401);
+		const q = new URLSearchParams({ kind: str(data.kind) });
+		for (const k of ["from", "to"] as const)
+			if (Number.isFinite(Number(data[k])) && data[k] !== "")
+				q.set(k, String(Math.trunc(Number(data[k]))));
+		let res: Response;
+		try {
+			res = await fetch(`${base()}/v1/account/export.csv?${q}`, {
+				headers: { authorization: `Bearer ${token}` },
+			});
+		} catch {
+			throw new ApiError("Cannot reach the Lunaz API. Try again shortly.", 502);
+		}
+		const text = await res.text();
+		if (!res.ok) {
+			if (res.status === 401) deleteCookie(COOKIE, { path: "/" });
+			let msg = `Export failed (${res.status})`;
+			try {
+				msg = JSON.parse(text).error ?? msg;
+			} catch {}
+			throw new ApiError(msg, res.status);
+		}
+		const m = /filename="([^"]+)"/.exec(
+			res.headers.get("content-disposition") ?? "",
+		);
+		return { csv: text, filename: m?.[1] ?? "lunaz-export.csv" };
+	});

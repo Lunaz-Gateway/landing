@@ -4,6 +4,7 @@ import {
 	type ApiKey,
 	createKey,
 	type Delivery,
+	exportCsv,
 	getWebhook,
 	type Invoice,
 	listDeliveries,
@@ -464,11 +465,116 @@ export const curlFor = (
   -H "Content-Type: application/json" \\
   -d '{"amount_zat":10000}'`;
 
+const monthStart = () => {
+	const d = new Date();
+	return new Date(d.getFullYear(), d.getMonth(), 1);
+};
+// yyyy-mm-dd in local time, as native date inputs expect
+const ymd = (d: Date) =>
+	`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+function ExportCsv() {
+	const [from, setFrom] = useState(() => ymd(monthStart()));
+	const [to, setTo] = useState(() => ymd(new Date()));
+	const [kind, setKind] = useState("invoices");
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState("");
+
+	async function download(e: React.FormEvent) {
+		e.preventDefault();
+		setBusy(true);
+		setError("");
+		try {
+			// local-day bounds as unix seconds
+			const f = from ? new Date(`${from}T00:00:00`).getTime() / 1000 : "";
+			const t = to ? new Date(`${to}T23:59:59`).getTime() / 1000 : "";
+			const r = await exportCsv({ data: { from: f, to: t, kind } });
+			const url = URL.createObjectURL(
+				new Blob([r.csv], { type: "text/csv;charset=utf-8" }),
+			);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = r.filename;
+			a.click();
+			URL.revokeObjectURL(url);
+		} catch (err) {
+			setError(errMsg(err));
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	return (
+		<section id="export" className={card} aria-labelledby="export-h">
+			<h2 id="export-h" className="font-bold">
+				Export CSV
+			</h2>
+			<form onSubmit={download} className="mt-3 flex flex-wrap items-end gap-3">
+				<div>
+					<label
+						htmlFor="exp-from"
+						className="mb-1.5 block text-sm font-medium"
+					>
+						From
+					</label>
+					<input
+						id="exp-from"
+						type="date"
+						value={from}
+						max={to || undefined}
+						onChange={(e) => setFrom(e.target.value)}
+						className={input}
+					/>
+				</div>
+				<div>
+					<label htmlFor="exp-to" className="mb-1.5 block text-sm font-medium">
+						To
+					</label>
+					<input
+						id="exp-to"
+						type="date"
+						value={to}
+						min={from || undefined}
+						onChange={(e) => setTo(e.target.value)}
+						className={input}
+					/>
+				</div>
+				<div>
+					<label
+						htmlFor="exp-kind"
+						className="mb-1.5 block text-sm font-medium"
+					>
+						Kind
+					</label>
+					<select
+						id="exp-kind"
+						value={kind}
+						onChange={(e) => setKind(e.target.value)}
+						className={input}
+					>
+						<option value="invoices">Invoices</option>
+						<option value="payments">Payments</option>
+					</select>
+				</div>
+				<button type="submit" disabled={busy} className={btn}>
+					{busy ? "Preparing…" : "Download"}
+				</button>
+			</form>
+			<p className="mt-3 text-xs text-kertas/60">
+				For your accountant. Built from your viewing key — this data is not
+				public.
+			</p>
+			<ErrorText error={error} />
+		</section>
+	);
+}
+
 export function Invoices() {
 	const { data, error } = useLoad(() => listInvoices());
 	return (
-		<div>
+		<div className="space-y-6">
 			<ErrorText error={error} />
+			<ExportCsv />
 			{data?.length === 0 ? (
 				<section className={`${card} space-y-3`}>
 					<h2 className="font-bold">No invoices yet</h2>
