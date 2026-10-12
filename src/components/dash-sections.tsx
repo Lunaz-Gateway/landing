@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	type ApiKey,
 	createKey,
@@ -16,13 +17,13 @@ import { btn, btn2, card, ErrorText, errMsg, input } from "./dash-ui";
 const th =
 	"px-3 py-2 text-left font-mono text-xs font-medium uppercase tracking-wider text-kertas/60";
 const td = "whitespace-nowrap px-3 py-3 align-top";
-const date = (s: number | null) =>
+export const date = (s: number | null) =>
 	s ? new Date(s * 1000).toISOString().slice(0, 16).replace("T", " ") : "—";
-const zec = (z: number) =>
+export const zec = (z: number) =>
 	(z / 1e8).toFixed(8).replace(/0+$/, "").replace(/\.$/, ".0");
 
 // Load once, expose reload; errors shown by the caller
-function useLoad<T>(fn: () => Promise<T>) {
+export function useLoad<T>(fn: () => Promise<T>) {
 	const [data, setData] = useState<T>();
 	const [error, setError] = useState("");
 	// biome-ignore lint/correctness/useExhaustiveDependencies: fn is a stable server function
@@ -40,7 +41,7 @@ function copy(text: string) {
 	return navigator.clipboard?.writeText(text);
 }
 
-function CopyButton({
+export function CopyButton({
 	text,
 	label = "Copy",
 }: {
@@ -63,84 +64,118 @@ function CopyButton({
 	);
 }
 
-export function ApiKeys() {
-	const { data, error, reload } = useLoad(() => listKeys());
+export type NewKey = { name: string; key: string };
+
+export function CreateKeyForm({
+	onCreated,
+	error = "",
+}: {
+	onCreated: (k: NewKey) => void;
+	error?: string;
+}) {
 	const [name, setName] = useState("");
 	const [err, setErr] = useState("");
-	const [created, setCreated] = useState<{ name: string; key: string } | null>(
-		null,
+	const [busy, setBusy] = useState(false);
+	return (
+		<form
+			className="flex flex-wrap items-end gap-3"
+			onSubmit={async (e) => {
+				e.preventDefault();
+				setErr("");
+				setBusy(true);
+				try {
+					const k = await createKey({ data: { name } });
+					setName("");
+					onCreated({ name: k.name, key: k.key });
+				} catch (x) {
+					setErr(errMsg(x));
+				}
+				setBusy(false);
+			}}
+		>
+			<div className="min-w-48 flex-1">
+				<label htmlFor="key-name" className="mb-1.5 block text-sm font-medium">
+					Key name
+				</label>
+				<input
+					id="key-name"
+					className={input}
+					value={name}
+					onChange={(e) => setName(e.target.value)}
+					placeholder="e.g. production"
+					required
+				/>
+			</div>
+			<button type="submit" className={btn} disabled={busy}>
+				{busy ? "Creating…" : "Create key"}
+			</button>
+			<div className="w-full">
+				<ErrorText error={err || error} />
+			</div>
+		</form>
 	);
+}
+
+export function NewKeyPanel({
+	created,
+	onDone,
+}: {
+	created: NewKey;
+	onDone: () => void;
+}) {
+	const ref = useRef<HTMLElement>(null);
+	useEffect(() => ref.current?.focus(), []);
+	return (
+		<section
+			ref={ref}
+			tabIndex={-1}
+			aria-labelledby="newkey-h"
+			className="rounded-xl border border-lunas/60 bg-malam p-5"
+		>
+			<h3 id="newkey-h" className="mb-1 font-bold">
+				Key "{created.name}" created
+			</h3>
+			<p className="mb-3 text-sm text-kertas/80">
+				Copy it now. You won't see it again.
+			</p>
+			<code className="mb-3 block break-all rounded-lg bg-malam-2 p-3 font-mono text-sm text-lunas">
+				{created.key}
+			</code>
+			<div className="flex gap-2">
+				<CopyButton text={created.key} label="Copy key" />
+				<button type="button" className={btn2} onClick={onDone}>
+					I've saved it
+				</button>
+			</div>
+		</section>
+	);
+}
+
+export function ApiKeys() {
+	const { data, error, reload } = useLoad(() => listKeys());
+	const [err, setErr] = useState("");
+	const [created, setCreated] = useState<NewKey | null>(null);
 	const [confirm, setConfirm] = useState<string | null>(null);
 	return (
 		<div className="space-y-6">
-			<form
-				className={`${card} flex flex-wrap items-end gap-3`}
-				onSubmit={async (e) => {
-					e.preventDefault();
-					setErr("");
-					try {
-						const k = await createKey({ data: { name } });
-						setCreated({ name: k.name, key: k.key });
-						setName("");
+			<section className={card} aria-labelledby="create-h">
+				<h2 id="create-h" className="mb-3 font-bold">
+					Create an API key
+				</h2>
+				<CreateKeyForm
+					error={err || error}
+					onCreated={(k) => {
+						setCreated(k);
 						reload();
-					} catch (x) {
-						setErr(errMsg(x));
-					}
-				}}
-			>
-				<div className="min-w-48 flex-1">
-					<label
-						htmlFor="key-name"
-						className="mb-1.5 block text-sm font-medium"
-					>
-						New API key name
-					</label>
-					<input
-						id="key-name"
-						className={input}
-						value={name}
-						onChange={(e) => setName(e.target.value)}
-						placeholder="e.g. production"
-						required
-					/>
-				</div>
-				<button type="submit" className={btn}>
-					Create key
-				</button>
-				<div className="w-full">
-					<ErrorText error={err || error} />
-				</div>
-			</form>
+					}}
+				/>
+			</section>
 
 			{created && (
-				<section
-					role="alertdialog"
-					aria-labelledby="newkey-h"
-					className="rounded-xl border border-lunas/60 bg-malam-2 p-5"
-				>
-					<h2 id="newkey-h" className="mb-1 font-bold">
-						Key "{created.name}" created
-					</h2>
-					<p className="mb-3 text-sm text-kertas/80">
-						Copy it now. You won't see it again.
-					</p>
-					<code className="mb-3 block break-all rounded-lg bg-malam p-3 font-mono text-sm text-lunas">
-						{created.key}
-					</code>
-					<div className="flex gap-2">
-						<CopyButton text={created.key} label="Copy key" />
-						<button
-							type="button"
-							className={btn2}
-							onClick={() => setCreated(null)}
-						>
-							I've saved it
-						</button>
-					</div>
-				</section>
+				<NewKeyPanel created={created} onDone={() => setCreated(null)} />
 			)}
 
-			<div className="overflow-x-auto rounded-xl border border-white/10">
+			<div className="overflow-x-auto rounded-xl border border-white/10 bg-malam-2/60">
 				<table className="w-full text-sm">
 					<caption className="sr-only">API keys</caption>
 					<thead className="border-b border-white/10">
@@ -288,7 +323,9 @@ export function Webhooks() {
 						Send test
 					</button>
 				</div>
-				<output className="block text-sm text-kertas/80">{msg}</output>
+				<output className="block text-sm text-kertas/80 empty:hidden">
+					{msg}
+				</output>
 				<ErrorText error={err || error} />
 			</form>
 
@@ -365,7 +402,14 @@ const pill: Record<Invoice["status"], string> = {
 	expired: "border-white/15 text-kertas/50",
 };
 
-export function Invoices({ goKeys }: { goKeys: () => void }) {
+export const curlFor = (
+	prefix = "lz_...",
+) => `curl -X POST $LUNAZ/v1/invoices \\
+  -H "Authorization: Bearer ${prefix}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"amount_zat":10000}'`;
+
+export function Invoices() {
 	const { data, error } = useLoad(() => listInvoices());
 	return (
 		<div>
@@ -375,23 +419,17 @@ export function Invoices({ goKeys }: { goKeys: () => void }) {
 					<h2 className="font-bold">No invoices yet</h2>
 					<p className="text-sm text-kertas/80">
 						Create an{" "}
-						<button
-							type="button"
-							onClick={goKeys}
-							className="font-bold underline"
-						>
+						<Link to="/dashboard/keys" className="font-bold underline">
 							API key
-						</button>{" "}
+						</Link>{" "}
 						and make your first invoice:
 					</p>
 					<pre className="overflow-x-auto rounded-lg bg-malam p-3 font-mono text-xs">
-						{`curl -X POST $LUNAZ/v1/invoices \\
-  -H "Authorization: Bearer lz_..." \\
-  -d '{"amount_zat":10000}'`}
+						{curlFor()}
 					</pre>
 				</section>
 			) : (
-				<div className="overflow-x-auto rounded-xl border border-white/10">
+				<div className="overflow-x-auto rounded-xl border border-white/10 bg-malam-2/60">
 					<table className="w-full text-sm">
 						<caption className="sr-only">Invoices</caption>
 						<thead className="border-b border-white/10">

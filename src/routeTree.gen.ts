@@ -10,18 +10,22 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardAppRouteImport } from './routes/dashboard/_app'
 import { Route as DashboardLoginRouteImport } from './routes/dashboard/login'
 import { Route as DashboardSignupRouteImport } from './routes/dashboard/signup'
+import { Route as DashboardAppIndexRouteImport } from './routes/dashboard/_app/index'
+import { Route as DashboardAppInvoicesRouteImport } from './routes/dashboard/_app/invoices'
+import { Route as DashboardAppKeysRouteImport } from './routes/dashboard/_app/keys'
+import { Route as DashboardAppWebhooksRouteImport } from './routes/dashboard/_app/webhooks'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: '/dashboard/',
-  path: '/dashboard/',
+const DashboardAppRoute = DashboardAppRouteImport.update({
+  id: '/dashboard/_app',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardLoginRoute = DashboardLoginRouteImport.update({
@@ -34,40 +38,94 @@ const DashboardSignupRoute = DashboardSignupRouteImport.update({
   path: '/dashboard/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardAppIndexRoute = DashboardAppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardAppRoute,
+} as any)
+const DashboardAppInvoicesRoute = DashboardAppInvoicesRouteImport.update({
+  id: '/invoices',
+  path: '/invoices',
+  getParentRoute: () => DashboardAppRoute,
+} as any)
+const DashboardAppKeysRoute = DashboardAppKeysRouteImport.update({
+  id: '/keys',
+  path: '/keys',
+  getParentRoute: () => DashboardAppRoute,
+} as any)
+const DashboardAppWebhooksRoute = DashboardAppWebhooksRouteImport.update({
+  id: '/webhooks',
+  path: '/webhooks',
+  getParentRoute: () => DashboardAppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardAppRouteWithChildren
   '/dashboard/login': typeof DashboardLoginRoute
   '/dashboard/signup': typeof DashboardSignupRoute
-  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/invoices': typeof DashboardAppInvoicesRoute
+  '/dashboard/keys': typeof DashboardAppKeysRoute
+  '/dashboard/webhooks': typeof DashboardAppWebhooksRoute
+  '/dashboard/': typeof DashboardAppIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard/login': typeof DashboardLoginRoute
   '/dashboard/signup': typeof DashboardSignupRoute
-  '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/invoices': typeof DashboardAppInvoicesRoute
+  '/dashboard/keys': typeof DashboardAppKeysRoute
+  '/dashboard/webhooks': typeof DashboardAppWebhooksRoute
+  '/dashboard': typeof DashboardAppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard/_app': typeof DashboardAppRouteWithChildren
   '/dashboard/login': typeof DashboardLoginRoute
   '/dashboard/signup': typeof DashboardSignupRoute
-  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/_app/invoices': typeof DashboardAppInvoicesRoute
+  '/dashboard/_app/keys': typeof DashboardAppKeysRoute
+  '/dashboard/_app/webhooks': typeof DashboardAppWebhooksRoute
+  '/dashboard/_app/': typeof DashboardAppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard/login' | '/dashboard/signup' | '/dashboard/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/dashboard/login'
+    | '/dashboard/signup'
+    | '/dashboard/invoices'
+    | '/dashboard/keys'
+    | '/dashboard/webhooks'
+    | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard/login' | '/dashboard/signup' | '/dashboard'
+  to:
+    | '/'
+    | '/dashboard/login'
+    | '/dashboard/signup'
+    | '/dashboard/invoices'
+    | '/dashboard/keys'
+    | '/dashboard/webhooks'
+    | '/dashboard'
   id:
-    '__root__' | '/' | '/dashboard/login' | '/dashboard/signup' | '/dashboard/'
+    | '__root__'
+    | '/'
+    | '/dashboard/_app'
+    | '/dashboard/login'
+    | '/dashboard/signup'
+    | '/dashboard/_app/invoices'
+    | '/dashboard/_app/keys'
+    | '/dashboard/_app/webhooks'
+    | '/dashboard/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardAppRoute: typeof DashboardAppRouteWithChildren
   DashboardLoginRoute: typeof DashboardLoginRoute
   DashboardSignupRoute: typeof DashboardSignupRoute
-  DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -79,11 +137,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/': {
-      id: '/dashboard/'
+    '/dashboard/_app': {
+      id: '/dashboard/_app'
       path: '/dashboard'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof DashboardIndexRouteImport
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardAppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/login': {
@@ -100,14 +158,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/_app/': {
+      id: '/dashboard/_app/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardAppIndexRouteImport
+      parentRoute: typeof DashboardAppRoute
+    }
+    '/dashboard/_app/invoices': {
+      id: '/dashboard/_app/invoices'
+      path: '/invoices'
+      fullPath: '/dashboard/invoices'
+      preLoaderRoute: typeof DashboardAppInvoicesRouteImport
+      parentRoute: typeof DashboardAppRoute
+    }
+    '/dashboard/_app/keys': {
+      id: '/dashboard/_app/keys'
+      path: '/keys'
+      fullPath: '/dashboard/keys'
+      preLoaderRoute: typeof DashboardAppKeysRouteImport
+      parentRoute: typeof DashboardAppRoute
+    }
+    '/dashboard/_app/webhooks': {
+      id: '/dashboard/_app/webhooks'
+      path: '/webhooks'
+      fullPath: '/dashboard/webhooks'
+      preLoaderRoute: typeof DashboardAppWebhooksRouteImport
+      parentRoute: typeof DashboardAppRoute
+    }
   }
 }
 
+interface DashboardAppRouteChildren {
+  DashboardAppInvoicesRoute: typeof DashboardAppInvoicesRoute
+  DashboardAppKeysRoute: typeof DashboardAppKeysRoute
+  DashboardAppWebhooksRoute: typeof DashboardAppWebhooksRoute
+  DashboardAppIndexRoute: typeof DashboardAppIndexRoute
+}
+
+const DashboardAppRouteChildren: DashboardAppRouteChildren = {
+  DashboardAppInvoicesRoute: DashboardAppInvoicesRoute,
+  DashboardAppKeysRoute: DashboardAppKeysRoute,
+  DashboardAppWebhooksRoute: DashboardAppWebhooksRoute,
+  DashboardAppIndexRoute: DashboardAppIndexRoute,
+}
+
+const DashboardAppRouteWithChildren = DashboardAppRoute._addFileChildren(
+  DashboardAppRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardAppRoute: DashboardAppRouteWithChildren,
   DashboardLoginRoute: DashboardLoginRoute,
   DashboardSignupRoute: DashboardSignupRoute,
-  DashboardIndexRoute: DashboardIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -174,3 +174,12 @@ body {
   html { scroll-behavior: auto; }
   .packets { display: none; }
 }
+
+/* Dashboard drawer */
+@keyframes slide-in {
+  from { transform: translateX(-100%); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .drawer-in { animation: slide-in 240ms var(--ease-out); }
+  .drawer-fade { animation: fade 240ms ease; }
+}
