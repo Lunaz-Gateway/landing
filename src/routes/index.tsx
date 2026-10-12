@@ -78,11 +78,13 @@ function Home() {
 			<main id="main">
 				<Hero />
 				<Problem />
+				<WhyNow />
 				<How />
 				<Clients />
 				<Security />
 				<Developers />
 				<Faq />
+				<CtaBand />
 			</main>
 			<Footer />
 		</>
@@ -144,21 +146,25 @@ function Hero() {
 						<span className="text-lunas">Settled in private.</span>
 					</h1>
 					<p className="mt-6 max-w-xl text-lg leading-relaxed text-kertas/75">
-						Lunaz is a non-custodial payment gateway that accepts shielded
-						Zcash, directly or from assets on other chains, without exposing
-						your revenue or your customer list.
+						Lunaz is a private, non-custodial payment gateway for shielded
+						Zcash. Take payment directly, or from assets on other chains through
+						NEAR Intents.
 					</p>
-					<div className="mt-9 flex flex-wrap gap-3">
+					<p className="mt-5 text-xl font-bold leading-snug sm:text-2xl">
+						No open balances.
+						<br />
+						No public revenue.
+						<br />
+						<span className="text-lunas">Just LUNAS.</span>
+					</p>
+					<div className="mt-9 flex flex-wrap items-center gap-5">
 						<a
-							className="rounded-full bg-lunas px-6 py-3 font-bold text-malam hover:brightness-95"
+							className="rounded-full bg-lunas px-7 py-3.5 font-bold text-malam hover:brightness-95"
 							href="#how"
 						>
 							See how it works
 						</a>
-						<a
-							className="rounded-full border border-white/25 px-6 py-3 font-bold hover:border-lunas hover:text-lunas"
-							href="#developers"
-						>
+						<a className="font-bold hover:text-lunas" href="#developers">
 							For developers
 						</a>
 					</div>
@@ -205,17 +211,19 @@ function Problem() {
 			<div className={`${wrap} py-20 sm:py-28`}>
 				<p className={`${eyebrow} text-malam/60`}>The problem</p>
 				<h2 className={`${h2} max-w-3xl`}>
-					Cash is private. Transparent chains are not.
+					Cash is private. Crypto at the counter is not.
 				</h2>
 				<div className="mt-10 grid gap-8 text-lg leading-relaxed sm:grid-cols-2">
 					<p>
 						When you pay cash, the cashier cannot see your savings. When you pay
-						with crypto on a transparent chain, they can see everything: your
-						balance, your history, every shop you have ever paid.
+						with crypto from a transparent wallet, they can see everything: your
+						whole balance and history. In a shop, that wallet address meets its
+						owner's face, a risky mix while crypto holders are targeted for
+						extortion.
 					</p>
 					<p>
-						The same goes for the merchant. Every sale is public, so competitors
-						can read revenue, suppliers and regulars straight off the ledger.
+						The merchant is exposed too. On a transparent chain, competitors can
+						read daily revenue, suppliers and regulars from a block explorer.
 						Lunaz brings cash-like privacy back to digital payments.
 					</p>
 				</div>
@@ -224,6 +232,45 @@ function Problem() {
 						<li key={t} className="rounded-2xl border border-malam/15 p-6">
 							<h3 className="text-xl font-bold">For {t.toLowerCase()}</h3>
 							<p className="mt-3 text-malam/75">{d}</p>
+						</li>
+					))}
+				</ul>
+			</div>
+		</section>
+	);
+}
+
+function WhyNow() {
+	const items = [
+		[
+			"The stablecoin wave",
+			"Stablecoin payments are going mainstream, almost all on transparent chains. Merchant data leaks grow with them.",
+		],
+		[
+			"Infrastructure is ready",
+			"NEAR Intents recently added swaps straight to shielded ZEC. Before, the destination had to be a transparent address.",
+		],
+		[
+			"New shielded users",
+			"Every USDC or SOL payment becomes a fresh shielded transaction, bringing people who never held ZEC into the shielded pool.",
+		],
+	] as const;
+	return (
+		<section className="bg-malam">
+			<div className={`${wrap} py-20 sm:py-28`}>
+				<p className={`${eyebrow} text-lunas`}>Why now</p>
+				<h2 className={`${h2} max-w-3xl`}>
+					Private by default. Transparent by choice.
+				</h2>
+				<p className="mt-5 max-w-2xl text-lg text-kertas/75">
+					Privacy is the default. Share a viewing key with your accountant or
+					tax office when you choose to.
+				</p>
+				<ul className="mt-12 grid gap-5 md:grid-cols-3">
+					{items.map(([t, d]) => (
+						<li key={t} className="rounded-2xl border border-white/15 p-6">
+							<h3 className="text-xl font-bold text-lunas">{t}</h3>
+							<p className="mt-3 text-kertas/70">{d}</p>
 						</li>
 					))}
 				</ul>
@@ -380,6 +427,26 @@ function Faq() {
 						</details>
 					))}
 				</div>
+			</div>
+		</section>
+	);
+}
+
+function CtaBand() {
+	return (
+		<section className="bg-lunas text-malam">
+			<div
+				className={`${wrap} flex flex-col gap-6 py-16 sm:flex-row sm:items-center sm:justify-between`}
+			>
+				<h2 className="max-w-xl text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+					Accept payments. Keep the books private.
+				</h2>
+				<a
+					className="w-fit rounded-full bg-malam px-7 py-3.5 font-bold text-kertas hover:brightness-125"
+					href={GITHUB}
+				>
+					View on GitHub
+				</a>
 			</div>
 		</section>
 	);
