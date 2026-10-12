@@ -16,6 +16,7 @@ import { Route as DashboardSignupRouteImport } from './routes/dashboard/signup'
 import { Route as DashboardAppIndexRouteImport } from './routes/dashboard/_app/index'
 import { Route as DashboardAppInvoicesRouteImport } from './routes/dashboard/_app/invoices'
 import { Route as DashboardAppKeysRouteImport } from './routes/dashboard/_app/keys'
+import { Route as DashboardAppSettingsRouteImport } from './routes/dashboard/_app/settings'
 import { Route as DashboardAppWebhooksRouteImport } from './routes/dashboard/_app/webhooks'
 
 const IndexRoute = IndexRouteImport.update({
@@ -53,6 +54,11 @@ const DashboardAppKeysRoute = DashboardAppKeysRouteImport.update({
   path: '/keys',
   getParentRoute: () => DashboardAppRoute,
 } as any)
+const DashboardAppSettingsRoute = DashboardAppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardAppRoute,
+} as any)
 const DashboardAppWebhooksRoute = DashboardAppWebhooksRouteImport.update({
   id: '/webhooks',
   path: '/webhooks',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/signup': typeof DashboardSignupRoute
   '/dashboard/invoices': typeof DashboardAppInvoicesRoute
   '/dashboard/keys': typeof DashboardAppKeysRoute
+  '/dashboard/settings': typeof DashboardAppSettingsRoute
   '/dashboard/webhooks': typeof DashboardAppWebhooksRoute
   '/dashboard/': typeof DashboardAppIndexRoute
 }
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/dashboard/signup': typeof DashboardSignupRoute
   '/dashboard/invoices': typeof DashboardAppInvoicesRoute
   '/dashboard/keys': typeof DashboardAppKeysRoute
+  '/dashboard/settings': typeof DashboardAppSettingsRoute
   '/dashboard/webhooks': typeof DashboardAppWebhooksRoute
   '/dashboard': typeof DashboardAppIndexRoute
 }
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/dashboard/signup': typeof DashboardSignupRoute
   '/dashboard/_app/invoices': typeof DashboardAppInvoicesRoute
   '/dashboard/_app/keys': typeof DashboardAppKeysRoute
+  '/dashboard/_app/settings': typeof DashboardAppSettingsRoute
   '/dashboard/_app/webhooks': typeof DashboardAppWebhooksRoute
   '/dashboard/_app/': typeof DashboardAppIndexRoute
 }
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/dashboard/signup'
     | '/dashboard/invoices'
     | '/dashboard/keys'
+    | '/dashboard/settings'
     | '/dashboard/webhooks'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/dashboard/signup'
     | '/dashboard/invoices'
     | '/dashboard/keys'
+    | '/dashboard/settings'
     | '/dashboard/webhooks'
     | '/dashboard'
   id:
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/dashboard/signup'
     | '/dashboard/_app/invoices'
     | '/dashboard/_app/keys'
+    | '/dashboard/_app/settings'
     | '/dashboard/_app/webhooks'
     | '/dashboard/_app/'
   fileRoutesById: FileRoutesById
@@ -179,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAppKeysRouteImport
       parentRoute: typeof DashboardAppRoute
     }
+    '/dashboard/_app/settings': {
+      id: '/dashboard/_app/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardAppSettingsRouteImport
+      parentRoute: typeof DashboardAppRoute
+    }
     '/dashboard/_app/webhooks': {
       id: '/dashboard/_app/webhooks'
       path: '/webhooks'
@@ -192,6 +211,7 @@ declare module '@tanstack/react-router' {
 interface DashboardAppRouteChildren {
   DashboardAppInvoicesRoute: typeof DashboardAppInvoicesRoute
   DashboardAppKeysRoute: typeof DashboardAppKeysRoute
+  DashboardAppSettingsRoute: typeof DashboardAppSettingsRoute
   DashboardAppWebhooksRoute: typeof DashboardAppWebhooksRoute
   DashboardAppIndexRoute: typeof DashboardAppIndexRoute
 }
@@ -199,6 +219,7 @@ interface DashboardAppRouteChildren {
 const DashboardAppRouteChildren: DashboardAppRouteChildren = {
   DashboardAppInvoicesRoute: DashboardAppInvoicesRoute,
   DashboardAppKeysRoute: DashboardAppKeysRoute,
+  DashboardAppSettingsRoute: DashboardAppSettingsRoute,
   DashboardAppWebhooksRoute: DashboardAppWebhooksRoute,
   DashboardAppIndexRoute: DashboardAppIndexRoute,
 }

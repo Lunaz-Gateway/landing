@@ -54,7 +54,47 @@ export const Route = createRootRoute({
 		],
 	}),
 	shellComponent: RootDocument,
+	notFoundComponent: NotFound,
 });
+
+function NotFound() {
+	return (
+		<main className="grid min-h-dvh place-items-center bg-malam px-5 text-center">
+			<div>
+				<a href="/" aria-label="Lunaz home" className="inline-block">
+					<img
+						src="/lunaz-symbol-on-dark.svg"
+						alt=""
+						width={40}
+						height={40}
+						className="mx-auto size-10"
+					/>
+				</a>
+				<p className="mt-6 font-mono text-sm text-kertas/55">404</p>
+				<h1 className="mt-1 text-2xl font-bold tracking-[-0.02em]">
+					Page not found
+				</h1>
+				<p className="mt-2 text-sm text-kertas/65">
+					The page you're looking for doesn't exist or has moved.
+				</p>
+				<div className="mt-6 flex justify-center gap-2">
+					<a
+						href="/"
+						className="press inline-flex h-9 items-center rounded-lg bg-lunas px-3.5 text-sm font-bold text-malam"
+					>
+						Go home
+					</a>
+					<a
+						href="/dashboard"
+						className="press inline-flex h-9 items-center rounded-lg border border-white/15 px-3.5 text-sm font-medium hover:bg-white/[0.06]"
+					>
+						Dashboard
+					</a>
+				</div>
+			</div>
+		</main>
+	);
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (

@@ -1,12 +1,24 @@
 import {
 	createFileRoute,
+	type ErrorComponentProps,
 	Link,
 	Outlet,
 	redirect,
 	useNavigate,
 	useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import {
+	Badge,
+	button,
+	DashNotFound,
+	Dialog,
+	Icon,
+	type IconName,
+	PageError,
+	Toaster,
+	useAction,
+} from "#/components/dash-ui";
 import { type Account, getAccount, logout } from "#/server/dash";
 
 export const Route = createFileRoute("/dashboard/_app")({
@@ -16,61 +28,34 @@ export const Route = createFileRoute("/dashboard/_app")({
 		return { account };
 	},
 	component: Shell,
+	errorComponent: DashError,
+	notFoundComponent: DashNotFound,
 });
 
 const DEMO = import.meta.env.VITE_DEMO_URL ?? "http://localhost:3000";
 
-const icon = (d: string) => (
-	<svg
-		viewBox="0 0 24 24"
-		className="size-4 shrink-0"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.8"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<path d={d} />
-	</svg>
-);
-
-const NAV = [
-	{
-		to: "/dashboard",
-		label: "Overview",
-		d: "M4 11l8-7 8 7v9h-5v-6H9v6H4z",
-	},
-	{
-		to: "/dashboard/keys",
-		label: "API keys",
-		d: "M14 10a4 4 0 1 0-3.9 3.1L8 15v2H6v2H3v-3l7.1-7.1M15.5 7.5h.01",
-	},
-	{
-		to: "/dashboard/webhooks",
-		label: "Webhooks",
-		d: "M4 12h4l3-7 4 14 3-7h2",
-	},
-	{
-		to: "/dashboard/invoices",
-		label: "Invoices",
-		d: "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
-	},
-] as const;
-
-const TITLES: Record<string, string> = Object.fromEntries(
-	NAV.map((n) => [n.to, n.label]),
-);
+const NAV: { to: string; label: string; icon: IconName }[] = [
+	{ to: "/dashboard", label: "Overview", icon: "home" },
+	{ to: "/dashboard/invoices", label: "Invoices", icon: "invoice" },
+	{ to: "/dashboard/keys", label: "API keys", icon: "key" },
+	{ to: "/dashboard/webhooks", label: "Webhooks", icon: "hook" },
+	{ to: "/dashboard/settings", label: "Settings", icon: "settings" },
+];
 
 const navItem =
-	"flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-kertas/70 hover:bg-white/5 hover:text-kertas focus-visible:outline-lunas";
+	"dash-focus flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm text-kertas/70 transition-colors duration-150 hover:bg-white/[0.06] hover:text-kertas";
 
 function Sidebar({ account }: { account: Account }) {
 	const navigate = useNavigate();
+	const { run, busy } = useAction();
 	return (
-		<div className="flex h-full flex-col gap-6 p-3">
-			<div className="px-2.5 pt-2">
-				<Link to="/dashboard" aria-label="Lunaz dashboard home">
+		<div className="flex h-full flex-col gap-5 p-3">
+			<div className="flex h-9 items-center px-2.5 pt-1">
+				<Link
+					to="/dashboard"
+					aria-label="Lunaz dashboard home"
+					className="dash-focus rounded-md"
+				>
 					<img
 						src="/lunaz-horizontal-on-dark.svg"
 						alt="Lunaz"
@@ -80,13 +65,13 @@ function Sidebar({ account }: { account: Account }) {
 					/>
 				</Link>
 			</div>
-			<div className="rounded-lg border border-white/10 bg-malam-2/60 px-3 py-2.5">
+			<div className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5">
 				<p className="truncate text-sm font-bold">{account.name}</p>
-				<span
-					className={`mt-1 inline-block rounded border px-1.5 py-px font-mono text-[10px] uppercase tracking-wider ${account.network === "main" ? "border-lunas/50 text-lunas" : "border-white/25 text-kertas/70"}`}
-				>
-					{account.network === "main" ? "Mainnet" : "Testnet"}
-				</span>
+				<div className="mt-1.5">
+					<Badge tone={account.network === "main" ? "success" : "neutral"}>
+						{account.network === "main" ? "Mainnet" : "Testnet"}
+					</Badge>
+				</div>
 			</div>
 			<nav aria-label="Dashboard" className="flex-1">
 				<ul className="space-y-0.5">
@@ -97,36 +82,42 @@ function Sidebar({ account }: { account: Account }) {
 								activeOptions={{ exact: true }}
 								className={navItem}
 								activeProps={{
-									className: "bg-white/[0.07] font-medium !text-kertas",
+									className: "bg-white/[0.08] font-medium !text-kertas",
+									"aria-current": "page",
 								}}
 							>
-								{icon(n.d)}
+								<Icon name={n.icon} />
 								{n.label}
 							</Link>
 						</li>
 					))}
 				</ul>
 			</nav>
-			<div className="space-y-1 border-t border-white/10 pt-3">
+			<div className="space-y-0.5 border-t border-white/[0.08] pt-3">
 				<a href="/#developers" className={navItem}>
-					{icon("M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M9 7h6")}
+					<Icon name="docs" />
 					Docs
 				</a>
-				<div className="flex items-center justify-between gap-2 px-2.5 py-2">
-					<span className="truncate text-xs text-kertas/60">
-						{account.email}
-					</span>
-					<button
-						type="button"
-						className="shrink-0 rounded text-xs font-medium text-kertas/80 underline-offset-2 hover:text-kertas hover:underline focus-visible:outline-lunas"
-						onClick={async () => {
+				<button
+					type="button"
+					className={`${navItem} w-full`}
+					disabled={busy === "out"}
+					onClick={() =>
+						run("out", async () => {
 							await logout();
 							await navigate({ to: "/dashboard/login" });
-						}}
-					>
-						Log out
-					</button>
-				</div>
+						})
+					}
+				>
+					<Icon name="logout" />
+					Sign out
+				</button>
+				<p
+					className="truncate px-2.5 pt-1 text-xs text-kertas/50"
+					title={account.email}
+				>
+					{account.email}
+				</p>
 			</div>
 		</div>
 	);
@@ -137,71 +128,51 @@ function Shell() {
 	const path = useRouterState({
 		select: (s) => s.location.pathname.replace(/\/$/, "") || "/",
 	});
-	const title = TITLES[path] ?? "Dashboard";
+	const title = NAV.find((n) => n.to === path)?.label ?? "Dashboard";
 	const [open, setOpen] = useState(false);
-	const menuBtn = useRef<HTMLButtonElement>(null);
-	const drawer = useRef<HTMLDivElement>(null);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: close the drawer on navigation
 	useEffect(() => setOpen(false), [path]);
-	useEffect(() => {
-		if (!open) return;
-		drawer.current?.querySelector<HTMLElement>("a,button")?.focus();
-		const onKey = (e: KeyboardEvent) => {
-			if (e.key === "Escape") {
-				setOpen(false);
-				menuBtn.current?.focus();
-			}
-		};
-		document.addEventListener("keydown", onKey);
-		return () => document.removeEventListener("keydown", onKey);
-	}, [open]);
 
 	return (
-		<div className="min-h-screen bg-malam md:pl-60">
-			<aside className="fixed inset-y-0 left-0 hidden w-60 border-r border-white/10 bg-[#181a35] md:block">
+		<div className="min-h-dvh bg-malam md:pl-60">
+			<a
+				href="#main"
+				className="dash-focus fixed top-2 left-2 z-[70] -translate-y-16 rounded-lg bg-lunas px-3 py-2 text-sm font-bold text-malam focus:translate-y-0"
+			>
+				Skip to content
+			</a>
+			<aside className="fixed inset-y-0 left-0 hidden w-60 border-r border-white/[0.08] bg-[#181a35] md:block">
 				<Sidebar account={account} />
 			</aside>
-			{open && (
-				<div className="fixed inset-0 z-40 md:hidden">
+			<Dialog
+				open={open}
+				onClose={() => setOpen(false)}
+				variant="nav"
+				labelledBy="nav-label"
+			>
+				<span id="nav-label" className="sr-only">
+					Menu
+				</span>
+				<Sidebar account={account} />
+			</Dialog>
+			<div className="flex min-h-dvh min-w-0 flex-col">
+				<header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-white/[0.08] bg-malam/85 px-4 backdrop-blur-md sm:px-6">
 					<button
 						type="button"
-						aria-label="Close menu"
-						tabIndex={-1}
-						className="drawer-fade absolute inset-0 bg-black/50"
-						onClick={() => setOpen(false)}
-					/>
-					<div
-						ref={drawer}
-						id="drawer"
-						role="dialog"
-						aria-modal="true"
-						aria-label="Menu"
-						className="drawer-in absolute inset-y-0 left-0 w-64 border-r border-white/10 bg-[#181a35] shadow-2xl"
-					>
-						<Sidebar account={account} />
-					</div>
-				</div>
-			)}
-			<div className="flex min-h-screen flex-col">
-				<header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-white/10 bg-malam/90 px-4 backdrop-blur sm:px-6">
-					<button
-						ref={menuBtn}
-						type="button"
-						className="-ml-1 rounded-lg p-1.5 text-kertas/80 hover:bg-white/5 focus-visible:outline-lunas md:hidden"
+						className={`${button("ghost", "icon")} -ml-1.5 md:hidden`}
 						aria-label="Open menu"
 						aria-expanded={open}
-						aria-controls="drawer"
 						onClick={() => setOpen(true)}
 					>
-						{icon("M4 7h16M4 12h16M4 17h16")}
+						<Icon name="menu" className="size-5" />
 					</button>
 					<nav aria-label="Breadcrumb" className="min-w-0 flex-1">
 						<ol className="flex items-center gap-1.5 text-sm">
-							<li className="hidden truncate text-kertas/60 sm:block">
+							<li className="hidden truncate text-kertas/55 sm:block">
 								{account.name}
 							</li>
-							<li aria-hidden="true" className="hidden text-kertas/30 sm:block">
+							<li aria-hidden="true" className="hidden text-kertas/25 sm:block">
 								/
 							</li>
 							<li aria-current="page" className="truncate font-medium">
@@ -209,22 +180,29 @@ function Shell() {
 							</li>
 						</ol>
 					</nav>
-					<span className="hidden items-center gap-1.5 text-xs text-kertas/70 sm:flex">
-						<span className="size-1.5 rounded-full bg-lunas" />
-						Gateway online
-					</span>
-					<a
-						href={DEMO}
-						className="rounded-lg px-2.5 py-1.5 text-sm text-kertas/80 hover:bg-white/5 hover:text-kertas focus-visible:outline-lunas"
-					>
+					<a href={DEMO} className={button("ghost", "sm")}>
 						Try the demo
+						<Icon name="external" className="size-3.5" />
 					</a>
 				</header>
-				<main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">
-					<h1 className="mb-6 text-2xl font-extrabold">{title}</h1>
+				<main
+					id="main"
+					tabIndex={-1}
+					className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 outline-none sm:px-6 sm:py-8"
+				>
 					<Outlet />
 				</main>
 			</div>
+			<Toaster />
+		</div>
+	);
+}
+
+// Full-screen variant for when the shell itself fails to load
+function DashError(props: ErrorComponentProps) {
+	return (
+		<div className="min-h-dvh bg-malam px-4 py-16">
+			<PageError {...props} />
 		</div>
 	);
 }
