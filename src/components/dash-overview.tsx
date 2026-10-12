@@ -234,6 +234,10 @@ function Stats({ invoices }: { invoices: Invoice[] }) {
 				<Link to="/dashboard/invoices" className="underline">
 					View invoices
 				</Link>
+				{" · "}
+				<Link to="/dashboard/invoices" hash="export" className="underline">
+					Export for your accountant
+				</Link>
 			</p>
 		</section>
 	);
