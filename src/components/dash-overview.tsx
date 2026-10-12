@@ -6,16 +6,36 @@ import {
 	type ApiKey,
 	type Invoice,
 	setUfvk,
+	testWebhook,
 } from "#/server/dash";
 import {
-	CopyButton,
+	Code,
 	CreateKeyForm,
 	curlFor,
+	KeyRevealDialog,
 	type NewKey,
-	NewKeyPanel,
-	zec,
+	StatusPill,
 } from "./dash-sections";
-import { btn, btn2, card, ErrorText, errMsg, input } from "./dash-ui";
+import {
+	Amount,
+	Button,
+	button,
+	Card,
+	CopyButton,
+	ErrorText,
+	errMsg,
+	Icon,
+	type IconName,
+	PageHeader,
+	Spinner,
+	Table,
+	Textarea,
+	Time,
+	td,
+	th,
+	useAction,
+	zec,
+} from "./dash-ui";
 
 type Props = {
 	account: Account;
@@ -66,7 +86,7 @@ export function Overview({ account, keys, invoices, webhook }: Props) {
 			done: !!webhook.url,
 			optional: true,
 			body: (
-				<Link to="/dashboard/webhooks" className={btn}>
+				<Link to="/dashboard/webhooks" className={button("primary")}>
 					Set up a webhook
 				</Link>
 			),
@@ -88,158 +108,313 @@ export function Overview({ account, keys, invoices, webhook }: Props) {
 		prev.current = current;
 	}, [current]);
 
-	return (
-		<div className="space-y-6">
-			{onboarded && <Stats invoices={invoices} />}
-			<section className={card} aria-labelledby="gs-h">
-				<div className="flex flex-wrap items-center justify-between gap-3">
-					<div>
-						<h2 id="gs-h" ref={gsHead} tabIndex={-1} className="font-bold">
-							Getting started
-						</h2>
-						<p className="text-sm text-kertas/70">
-							{doneCount} of {REQUIRED} done
-						</p>
-					</div>
-					{onboarded && (
-						<button
-							type="button"
-							className={btn2}
-							aria-expanded={showSteps}
-							aria-controls="gs-steps"
-							onClick={() => setShowSteps(!showSteps)}
-						>
-							{showSteps ? "Hide steps" : "Show steps"}
-						</button>
-					)}
+	const timeline = (
+		<section className="dash-card p-5" aria-labelledby="gs-h">
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<div>
+					<h2
+						id="gs-h"
+						ref={gsHead}
+						tabIndex={-1}
+						className="dash-focus rounded-sm text-[15px] font-bold"
+					>
+						Getting started
+					</h2>
+					<p className="mt-0.5 text-sm text-kertas/65 tabular-nums">
+						{doneCount} of {REQUIRED} done
+						{onboarded && !webhook.url && " · webhook optional"}
+					</p>
 				</div>
+				{onboarded && (
+					<Button
+						size="sm"
+						aria-expanded={showSteps}
+						aria-controls="gs-steps"
+						onClick={() => setShowSteps(!showSteps)}
+					>
+						{showSteps ? "Hide steps" : "Show steps"}
+					</Button>
+				)}
+			</div>
+			<div
+				className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10"
+				role="progressbar"
+				aria-label="Getting started progress"
+				aria-valuemin={0}
+				aria-valuemax={REQUIRED}
+				aria-valuenow={doneCount}
+			>
 				<div
-					className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"
-					role="progressbar"
-					aria-label="Getting started progress"
-					aria-valuemin={0}
-					aria-valuemax={REQUIRED}
-					aria-valuenow={doneCount}
-				>
-					<div
-						className="progress-fill h-full origin-left rounded-full bg-lunas"
-						style={{ transform: `scaleX(${doneCount / REQUIRED})` }}
-					/>
-				</div>
-				{expanded && (
-					<ol id="gs-steps" className="mt-6">
-						{steps.map((s, i) => {
-							const isCurrent = i === current;
-							const future = current >= 0 && i > current;
-							return (
-								<li
-									key={s.title}
-									aria-current={isCurrent ? "step" : undefined}
-									className="relative pb-6 pl-12 last:pb-0"
-								>
-									{i < steps.length - 1 && (
-										<span
-											aria-hidden="true"
-											className={`absolute top-9 bottom-1 left-[15px] w-px ${s.done ? "bg-lunas/50" : "bg-white/10"}`}
-										/>
-									)}
+					className="progress-fill h-full origin-left rounded-full bg-lunas"
+					style={{ transform: `scaleX(${doneCount / REQUIRED})` }}
+				/>
+			</div>
+			{expanded && (
+				<ol id="gs-steps" className="mt-6">
+					{steps.map((s, i) => {
+						const isCurrent = i === current;
+						const future = current >= 0 && i > current;
+						return (
+							<li
+								key={s.title}
+								aria-current={isCurrent ? "step" : undefined}
+								className="relative pb-6 pl-12 last:pb-0"
+							>
+								{i < steps.length - 1 && (
 									<span
 										aria-hidden="true"
-										className={`absolute top-0 left-0 grid size-8 place-items-center rounded-full border font-mono text-sm ${
-											s.done
-												? "border-lunas bg-lunas text-malam"
-												: isCurrent
-													? "border-lunas text-lunas"
-													: "border-white/15 text-kertas/40"
-										}`}
+										className={`absolute top-9 bottom-1 left-[15px] w-px ${s.done ? "bg-lunas/50" : "bg-white/10"}`}
+									/>
+								)}
+								<span
+									aria-hidden="true"
+									className={`absolute top-0 left-0 grid size-8 place-items-center rounded-full border text-sm font-medium tabular-nums ${
+										s.done
+											? "border-lunas bg-lunas text-malam"
+											: isCurrent
+												? "border-lunas text-lunas"
+												: "border-white/15 text-kertas/40"
+									}`}
+								>
+									{s.done ? <Icon name="check" /> : i + 1}
+								</span>
+								<div className={future ? "opacity-50" : undefined}>
+									<h3
+										ref={(el) => {
+											heads.current[i] = el;
+										}}
+										tabIndex={-1}
+										className="dash-focus rounded-sm pt-1 font-bold"
 									>
-										{s.done ? (
-											<svg
-												viewBox="0 0 16 16"
-												aria-hidden="true"
-												className="size-4"
-												fill="none"
-												stroke="currentColor"
-												strokeWidth="2.2"
-											>
-												<path d="M3.5 8.5l3 3 6-7" />
-											</svg>
-										) : (
-											i + 1
-										)}
-									</span>
-									<div className={future ? "opacity-50" : undefined}>
-										<h3
-											ref={(el) => {
-												heads.current[i] = el;
-											}}
-											tabIndex={-1}
-											className="pt-1 font-bold focus-visible:outline-lunas"
-										>
-											{s.title}
-											{s.optional && (
-												<span className="ml-2 font-normal text-xs text-kertas/60">
-													Optional
-												</span>
-											)}
-											<span className="sr-only">
-												{s.done
-													? " (done)"
-													: isCurrent
-														? " (current step)"
-														: ""}
+										{s.title}
+										{s.optional && (
+											<span className="ml-2 text-xs font-normal text-kertas/55">
+												Optional
 											</span>
-										</h3>
-										<p className="text-sm text-kertas/70">{s.desc}</p>
-									</div>
-									{isCurrent && s.body && <div className="mt-4">{s.body}</div>}
-								</li>
-							);
-						})}
-					</ol>
-				)}
-			</section>
-		</div>
+										)}
+										<span className="sr-only">
+											{s.done ? " (done)" : isCurrent ? " (current step)" : ""}
+										</span>
+									</h3>
+									<p className="text-sm text-kertas/65">{s.desc}</p>
+								</div>
+								{isCurrent && s.body && <div className="mt-4">{s.body}</div>}
+							</li>
+						);
+					})}
+				</ol>
+			)}
+		</section>
+	);
+
+	if (!onboarded)
+		return (
+			<>
+				<PageHeader
+					title={`Welcome, ${account.name}`}
+					description="A few steps and you're ready to take private payments."
+				/>
+				{timeline}
+			</>
+		);
+
+	return (
+		<>
+			<PageHeader
+				title="Overview"
+				description={`Welcome back, ${account.name}.`}
+			/>
+			<div className="space-y-6">
+				<Stats invoices={invoices} />
+				<div className="grid gap-6 lg:grid-cols-3">
+					<RecentInvoices invoices={invoices} />
+					<QuickActions hasWebhook={!!webhook.url} />
+				</div>
+				{timeline}
+			</div>
+		</>
 	);
 }
 
 function Stats({ invoices }: { invoices: Invoice[] }) {
-	const paid = invoices.filter((i) => i.status === "paid");
+	const paid = invoices.filter((i) => i.status === "paid").length;
 	const pending = invoices.filter(
 		(i) => i.status === "pending" || i.status === "detected",
 	).length;
 	const underpaid = invoices.filter((i) => i.status === "underpaid").length;
 	const received = invoices.reduce((t, i) => t + i.received_zat, 0);
-	const stats = [
-		["Invoices paid", String(paid.length)],
-		["Pending", String(pending)],
-		...(underpaid > 0 ? [["Underpaid", String(underpaid)]] : []),
-		["Total received", `${zec(received)} ZEC`],
+	const stats: {
+		label: string;
+		value: ReactNode;
+		hint: string;
+		warn?: boolean;
+	}[] = [
+		{
+			label: "Invoices paid",
+			value: paid,
+			hint: `of ${invoices.length} invoices`,
+		},
+		{
+			label: "Received",
+			value: (
+				<>
+					{zec(received)}{" "}
+					<span className="text-base font-medium text-kertas/50">ZEC</span>
+				</>
+			),
+			hint: "Across all statuses",
+		},
+		{ label: "Awaiting payment", value: pending, hint: "Pending or detected" },
+		...(underpaid > 0
+			? [
+					{
+						label: "Underpaid",
+						value: underpaid,
+						hint: "Need follow-up",
+						warn: true,
+					},
+				]
+			: []),
 	];
 	return (
 		<section aria-label="Invoice stats">
-			<dl className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))]">
-				{stats.map(([k, v]) => (
+			<dl
+				className={`grid grid-cols-2 gap-3 sm:gap-4 ${stats.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+			>
+				{stats.map((s, i) => (
 					<div
-						key={k}
-						className={`${card} last:odd:col-span-2 sm:last:col-span-1`}
+						key={s.label}
+						className={`dash-card p-4 sm:p-5 ${stats.length === 3 && i === 2 ? "col-span-2 lg:col-span-1" : ""}`}
 					>
-						<dt className="text-sm text-kertas/70">{k}</dt>
-						<dd className="mt-1 font-mono text-2xl font-semibold">{v}</dd>
+						<dt className="flex items-center gap-1.5 text-sm text-kertas/65">
+							{s.warn && (
+								<span className="size-1.5 rounded-full bg-[#ffb86b]" />
+							)}
+							{s.label}
+						</dt>
+						<dd className="mt-2 text-2xl font-bold tracking-[-0.02em] tabular-nums sm:text-[28px]">
+							{s.value}
+						</dd>
+						<dd className="mt-1 text-xs text-kertas/50">{s.hint}</dd>
 					</div>
 				))}
 			</dl>
-			<p className="mt-2 text-xs text-kertas/60">
-				From your 50 most recent invoices.{" "}
-				<Link to="/dashboard/invoices" className="underline">
-					View invoices
-				</Link>
-				{" · "}
-				<Link to="/dashboard/invoices" hash="export" className="underline">
-					Export for your accountant
-				</Link>
-			</p>
+			{invoices.length >= 200 && (
+				<p className="mt-2 text-xs text-kertas/55">
+					Based on your 200 most recent invoices.
+				</p>
+			)}
 		</section>
+	);
+}
+
+function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
+	return (
+		<Card
+			title="Recent invoices"
+			className="lg:col-span-2"
+			flush
+			actions={
+				<Link to="/dashboard/invoices" className={button("ghost", "sm")}>
+					View all
+					<Icon name="arrow" className="size-3.5" />
+				</Link>
+			}
+		>
+			<Table
+				caption="Recent invoices"
+				head={
+					<>
+						<th className={th}>Invoice</th>
+						<th className={th}>Status</th>
+						<th className={`${th} text-right`}>Amount</th>
+						<th className={`${th} text-right`}>Created</th>
+					</>
+				}
+			>
+				{invoices.slice(0, 5).map((i) => (
+					<tr key={i.id}>
+						<td className={td} data-label="Invoice">
+							<Link
+								to="/dashboard/invoices"
+								search={{ id: i.id }}
+								className="dash-focus rounded-sm font-mono text-[13px] underline decoration-white/20 underline-offset-2 hover:decoration-kertas"
+							>
+								{i.id.slice(0, 8)}
+							</Link>
+						</td>
+						<td className={td} data-label="Status">
+							<StatusPill status={i.status} />
+						</td>
+						<td className={`${td} text-right`} data-label="Amount" data-end>
+							<Amount zat={i.amount_zat} />
+						</td>
+						<td className={`${td} text-right`} data-label="Created" data-end>
+							<Time s={i.created_at} />
+						</td>
+					</tr>
+				))}
+			</Table>
+		</Card>
+	);
+}
+
+function QuickActions({ hasWebhook }: { hasWebhook: boolean }) {
+	const { run, busy } = useAction();
+	const item =
+		"dash-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-white/[0.05] disabled:opacity-50";
+	const ic = (n: IconName) => (
+		<span className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-kertas/75">
+			<Icon name={n} />
+		</span>
+	);
+	return (
+		<Card title="Quick actions" flush>
+			<div className="space-y-0.5 px-2 pb-3">
+				<Link to="/dashboard/keys" className={item}>
+					{ic("key")}
+					<span className="flex-1">Create an API key</span>
+				</Link>
+				<Link
+					to="/dashboard/invoices"
+					search={{ export: true }}
+					className={item}
+				>
+					{ic("download")}
+					<span className="flex-1">Export CSV for your accountant</span>
+				</Link>
+				{hasWebhook ? (
+					<button
+						type="button"
+						className={item}
+						disabled={busy === "test"}
+						onClick={() =>
+							run(
+								"test",
+								() => testWebhook(),
+								(r) =>
+									r.status >= 200 && r.status < 300
+										? `Test delivered (${r.status})`
+										: `Your endpoint answered ${r.status}`,
+							)
+						}
+					>
+						{ic("send")}
+						<span className="flex-1">Send a test webhook</span>
+						{busy === "test" && <Spinner />}
+					</button>
+				) : (
+					<Link to="/dashboard/webhooks" className={item}>
+						{ic("hook")}
+						<span className="flex-1">Set up a webhook</span>
+					</Link>
+				)}
+				<a href="/#developers" className={item}>
+					{ic("docs")}
+					<span className="flex-1">Read the API docs</span>
+				</a>
+			</div>
+		</Card>
 	);
 }
 
@@ -247,41 +422,41 @@ function KeyStep() {
 	const router = useRouter();
 	const [created, setCreated] = useState<NewKey | null>(null);
 	// Reload only after dismissal, so the one-time key stays on screen
-	return created ? (
-		<NewKeyPanel
-			created={created}
-			onDone={() => {
-				setCreated(null);
-				router.invalidate();
-			}}
-		/>
-	) : (
-		<CreateKeyForm onCreated={setCreated} />
+	return (
+		<>
+			<CreateKeyForm onCreated={setCreated} />
+			<KeyRevealDialog
+				created={created}
+				onDone={() => {
+					setCreated(null);
+					router.invalidate();
+				}}
+			/>
+		</>
 	);
 }
 
 function InvoiceStep({ prefix }: { prefix?: string }) {
 	const router = useRouter();
+	const [busy, setBusy] = useState(false);
 	const cmd = curlFor(prefix ? `${prefix}...` : undefined);
 	return (
 		<div className="space-y-3">
-			<p className="text-sm text-kertas/80">
+			<p className="text-sm text-kertas/75">
 				Set <code className="font-mono">$LUNAZ</code> to the API URL and replace
 				the key with your full API key.
 			</p>
-			<pre className="overflow-x-auto rounded-lg border border-white/10 bg-malam p-3 font-mono text-xs leading-relaxed">
-				{cmd}
-			</pre>
-			<div className="flex flex-wrap gap-2">
-				<CopyButton text={cmd} label="Copy command" />
-				<button
-					type="button"
-					className={btn2}
-					onClick={() => router.invalidate()}
-				>
-					I've created one
-				</button>
-			</div>
+			<Code copy="Copy command">{cmd}</Code>
+			<Button
+				pending={busy}
+				onClick={async () => {
+					setBusy(true);
+					await router.invalidate();
+					setBusy(false);
+				}}
+			>
+				I've created one
+			</Button>
 		</div>
 	);
 }
@@ -369,10 +544,10 @@ function GenerateWallet({ onUseOwn }: { onUseOwn: () => void }) {
 
 	if (!wallet)
 		return (
-			<div className="space-y-3 rounded-xl border border-white/10 bg-malam p-4">
+			<div className="space-y-3 rounded-xl border border-white/[0.08] bg-[#1f2246] p-4">
 				<button
 					type="button"
-					className={btn}
+					className={button("primary")}
 					disabled={busyGen}
 					onClick={async () => {
 						setBusyGen(true);
@@ -393,7 +568,7 @@ function GenerateWallet({ onUseOwn }: { onUseOwn: () => void }) {
 							Generating in the browser is coming soon — use your own viewing
 							key for now.
 						</output>
-						<button type="button" className={btn2} onClick={onUseOwn}>
+						<button type="button" className={button()} onClick={onUseOwn}>
 							Use my own viewing key
 						</button>
 					</div>
@@ -406,7 +581,7 @@ function GenerateWallet({ onUseOwn }: { onUseOwn: () => void }) {
 	const words = wallet.mnemonic.split(/\s+/);
 	if (confirming)
 		return (
-			<div className="space-y-3 rounded-xl border border-white/10 bg-malam p-4">
+			<div className="space-y-3 rounded-xl border border-white/[0.08] bg-[#1f2246] p-4">
 				<h4 ref={head} tabIndex={-1} className="font-bold">
 					Save the viewing key
 				</h4>
@@ -429,7 +604,7 @@ function GenerateWallet({ onUseOwn }: { onUseOwn: () => void }) {
 				<div className="flex flex-wrap gap-2">
 					<button
 						type="button"
-						className={btn}
+						className={button("primary")}
 						disabled={busy}
 						onClick={() => save(wallet.ufvk, () => setWallet(null))}
 					>
@@ -437,7 +612,7 @@ function GenerateWallet({ onUseOwn }: { onUseOwn: () => void }) {
 					</button>
 					<button
 						type="button"
-						className={btn2}
+						className={button()}
 						onClick={() => setConfirming(false)}
 					>
 						Back
@@ -447,7 +622,7 @@ function GenerateWallet({ onUseOwn }: { onUseOwn: () => void }) {
 		);
 
 	return (
-		<div className="space-y-3 rounded-xl border border-white/10 bg-malam p-4">
+		<div className="space-y-3 rounded-xl border border-white/[0.08] bg-[#1f2246] p-4">
 			<h4 ref={head} tabIndex={-1} className="font-bold">
 				Your recovery phrase
 			</h4>
@@ -475,7 +650,7 @@ function GenerateWallet({ onUseOwn }: { onUseOwn: () => void }) {
 					<div className="absolute inset-0 grid place-items-center">
 						<button
 							type="button"
-							className={btn2}
+							className={button()}
 							onClick={() => setRevealed(true)}
 						>
 							Reveal phrase
@@ -487,7 +662,7 @@ function GenerateWallet({ onUseOwn }: { onUseOwn: () => void }) {
 				{revealed && (
 					<button
 						type="button"
-						className={btn2}
+						className={button()}
 						onClick={() => setRevealed(false)}
 					>
 						Hide
@@ -506,7 +681,7 @@ function GenerateWallet({ onUseOwn }: { onUseOwn: () => void }) {
 			</label>
 			<button
 				type="button"
-				className={btn}
+				className={button("primary")}
 				disabled={!written}
 				onClick={() => setConfirming(true)}
 			>
@@ -520,30 +695,22 @@ function OwnKey({ network }: { network: Account["network"] }) {
 	const { error, busy, save } = useSaveUfvk();
 	return (
 		<form
-			className="space-y-3 rounded-xl border border-white/10 bg-malam p-4"
+			className="space-y-3 rounded-xl border border-white/[0.08] bg-[#1f2246] p-4"
 			onSubmit={(e) => {
 				e.preventDefault();
 				save(String(new FormData(e.currentTarget).get("ufvk")));
 			}}
 		>
-			<label htmlFor="ufvk" className="block text-sm font-medium">
-				Unified Full Viewing Key
-			</label>
-			<textarea
+			<Textarea
 				id="ufvk"
-				name="ufvk"
+				label="Unified Full Viewing Key"
 				rows={4}
 				required
 				spellCheck={false}
-				aria-describedby="ufvk-note"
-				aria-invalid={!!error || undefined}
 				placeholder={network === "main" ? "uview1…" : "uviewtest1…"}
-				className={`${input} break-all font-mono`}
+				className="[&_textarea]:font-mono [&_textarea]:break-all"
+				hint="This can only be set once. Check that it is the right wallet before you save."
 			/>
-			<p id="ufvk-note" className="text-sm text-kertas/70">
-				This can only be set once. Check that it is the right wallet before you
-				save.
-			</p>
 			<details className="text-sm text-kertas/80">
 				<summary className="cursor-pointer font-medium text-kertas">
 					Where do I find it?
@@ -560,9 +727,9 @@ function OwnKey({ network }: { network: Account["network"] }) {
 				</p>
 			</details>
 			<ErrorText error={error} />
-			<button type="submit" className={btn} disabled={busy}>
-				{busy ? "Saving…" : "Save viewing key"}
-			</button>
+			<Button type="submit" variant="primary" pending={busy}>
+				Save viewing key
+			</Button>
 		</form>
 	);
 }
