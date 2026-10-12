@@ -174,37 +174,49 @@ export function GatewayFlow() {
 }
 
 type Ev = { name: string; detail: string; lunas?: boolean };
-const EVENTS: Ev[] = [
-	{ name: "invoice.created", detail: "inv_0043 · new u1… address" },
+const events = (inv: string): Ev[] => [
+	{ name: "invoice.created", detail: `${inv} · new u1… address` },
 	{ name: "swap.pending", detail: "USDC → ZEC · NEAR Intents" },
 	{ name: "payment.detected", detail: "mempool · 0.2500 ZEC" },
 	{ name: "invoice.paid", detail: "1 confirmation", lunas: true },
 	{ name: "webhook.sent", detail: "200 OK · HMAC-SHA256" },
 ];
+const STEP_MS = 1200;
+const PAUSE_MS = 2500;
 
-// A rolling log; the static first render is already the complete sequence
+// Replays one invoice's events in order; the static first render is the full sequence
 export function EventStream() {
-	const [log, setLog] = useState(() => EVENTS.map((e, i) => ({ ...e, id: i })));
+	const [run, setRun] = useState({ n: 43, shown: 5 });
 	const ref = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 		let timer = 0;
-		let n = EVENTS.length;
-		const tick = () => {
-			const next = { ...EVENTS[n % EVENTS.length], id: n++ };
-			setLog((l) => [...l.slice(1), next]);
+		let cur = { n: 43, shown: 5 };
+		const schedule = () => {
+			const wait = cur.shown >= 5 ? PAUSE_MS : cur.shown === 0 ? 300 : STEP_MS;
+			timer = window.setTimeout(() => {
+				cur =
+					cur.shown >= 5
+						? { n: cur.n + 1, shown: 0 }
+						: { ...cur, shown: cur.shown + 1 };
+				setRun(cur);
+				schedule();
+			}, wait);
 		};
 		const io = new IntersectionObserver(([e]) => {
-			clearInterval(timer);
-			if (e.isIntersecting) timer = window.setInterval(tick, 1500);
+			clearTimeout(timer);
+			if (e.isIntersecting) schedule();
 		});
 		if (ref.current) io.observe(ref.current);
 		return () => {
 			io.disconnect();
-			clearInterval(timer);
+			clearTimeout(timer);
 		};
 	}, []);
+
+	const inv = `inv_${String(run.n).padStart(4, "0")}`;
+	const log = events(inv).slice(0, run.shown);
 
 	return (
 		<div
@@ -212,16 +224,19 @@ export function EventStream() {
 			className="rounded-xl border border-white/10 bg-black/20 font-mono text-[12px] sm:text-[13px]"
 		>
 			<div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5 text-[11px] text-kertas/50">
-				<span>events · wss://…/v1/invoices/inv_0043</span>
+				<span>events · wss://…/v1/invoices/{inv}</span>
 				<span className="flex items-center gap-1.5 text-lunas">
 					<span className="size-1.5 rounded-full bg-lunas" />
 					live
 				</span>
 			</div>
-			<ol className="space-y-1 px-4 py-3" aria-label="Example invoice events">
+			<ol
+				className="h-[8.6rem] space-y-1 px-4 py-3 sm:h-[9.2rem]"
+				aria-label="Example invoice events"
+			>
 				{log.map((e) => (
 					<li
-						key={e.id}
+						key={`${inv}-${e.name}`}
 						className="ev-in flex items-center gap-3 whitespace-nowrap"
 					>
 						<span className="text-kertas/35">›</span>
