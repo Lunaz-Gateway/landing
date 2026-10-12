@@ -2,10 +2,13 @@
 
 @theme {
   --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --color-malam: #1c1f3d;
+  --color-malam-2: #252950;
   --color-kertas: #f6f2e9;
   --color-lunas: #c8f169;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 html {
@@ -27,25 +30,161 @@ body {
   border-radius: 4px;
 }
 
-/* LUNAS stamp on the cashier mock */
-@keyframes stamp {
-  0% { opacity: 0; transform: scale(1.6) rotate(-6deg); }
-  60% { opacity: 1; transform: scale(0.96) rotate(-3deg); }
-  100% { opacity: 1; transform: scale(1) rotate(-3deg); }
+.press {
+  transition: transform 160ms var(--ease-out);
 }
-@keyframes pulse-dot {
-  50% { opacity: 0.35; }
+.press:active {
+  transform: scale(0.97);
 }
-.stamp { animation: stamp 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s both; }
-.pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
 
-/* Torn receipt edge */
-.receipt-edge {
-  --s: 10px;
+/* Serrated receipt edge: a strip of triangles */
+.zigzag {
+  --s: 12px;
+  height: calc(var(--s) / 2);
+  background: var(--color-kertas);
   mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / var(--s) 100%;
+}
+.zigzag-up {
+  transform: scaleY(-1);
+}
+
+/*
+  Motion. Base styles are the final state, so reduced motion (or no
+  animation support) simply shows the finished picture.
+*/
+@keyframes print {
+  from { transform: translateY(-100%); }
+}
+@keyframes fold {
+  from { transform: rotateX(0deg); }
+}
+@keyframes stamp {
+  0% { opacity: 0; transform: scale(1.5) rotate(-7deg); }
+  70% { opacity: 1; transform: scale(0.96) rotate(-7deg); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+}
+@keyframes fade {
+  from { opacity: 0; }
+}
+@keyframes wipe-down {
+  from { clip-path: inset(0 0 100% 0); }
+}
+@keyframes wipe-right {
+  from { clip-path: inset(0 100% 0 0); }
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+}
+@keyframes scan {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(var(--h, 200px)); opacity: 0; }
+}
+@keyframes travel {
+  from { transform: translateX(0); }
+  to { transform: translateX(var(--d, 200px)); }
+}
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+@keyframes draw {
+  from { stroke-dashoffset: var(--len, 300); }
+}
+
+.seq-travel {
+  transform: translateX(var(--d, 0));
+}
+.receipt-flap {
+  transform: rotateX(180deg);
+  transform-origin: top;
+  transform-style: preserve-3d;
+}
+.face {
+  backface-visibility: hidden;
+}
+.face-back {
+  transform: rotateX(180deg);
+}
+
+/* Settled pulse ring on status dots */
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .anim-print { animation: print 1.7s cubic-bezier(0.45, 0.05, 0.25, 1) 0.35s backwards; }
+  .anim-fold { animation: fold 0.9s var(--ease-in-out) 2.45s backwards; }
+  .anim-stamp { animation: stamp 0.42s var(--ease-out) 3.5s backwards; }
+  .anim-hero-copy > * { animation: fade-up 0.7s var(--ease-out) backwards; }
+  .anim-hero-copy > *:nth-child(2) { animation-delay: 80ms; }
+  .anim-hero-copy > *:nth-child(3) { animation-delay: 160ms; }
+  .anim-hero-copy > *:nth-child(4) { animation-delay: 240ms; }
+  .anim-late { animation: fade 0.6s ease 4s backwards; }
+
+  /* One-shot sequences gated by data-on (in view / active step) */
+  [data-on="false"] .seq { opacity: 0; }
+  [data-on="true"] .seq { animation: fade-up 0.5s var(--ease-out) var(--t, 0ms) backwards; }
+  [data-on="false"] .seq-fade { opacity: 0; }
+  [data-on="true"] .seq-fade { animation: fade 0.5s ease var(--t, 0ms) backwards; }
+  [data-on="false"] .seq-wipe { clip-path: inset(0 100% 0 0); }
+  [data-on="true"] .seq-wipe { animation: wipe-right 0.6s var(--ease-out) var(--t, 0ms) backwards; }
+  [data-on="false"] .seq-qr { clip-path: inset(0 0 100% 0); }
+  [data-on="true"] .seq-qr { animation: wipe-down 1.1s cubic-bezier(0.65, 0, 0.35, 1) var(--t, 0ms) backwards; }
+  [data-on="true"] .seq-scan { animation: scan 1.1s cubic-bezier(0.65, 0, 0.35, 1) var(--t, 0ms) both; }
+  [data-on="false"] .seq-grow { transform: scaleX(0); }
+  [data-on="true"] .seq-grow { animation: grow-x 0.9s var(--ease-in-out) var(--t, 0ms) backwards; }
+  [data-on="false"] .seq-stamp { opacity: 0; }
+  [data-on="true"] .seq-stamp { animation: stamp 0.42s var(--ease-out) var(--t, 0ms) backwards; }
+  [data-on="false"] .seq-travel { transform: translateX(0); }
+  [data-on="true"] .seq-travel { animation: travel 1.4s var(--ease-in-out) var(--t, 0ms) backwards; }
+  [data-on="false"] .seq-draw { stroke-dashoffset: var(--len, 300); }
+  [data-on="true"] .seq-draw { animation: draw 0.9s var(--ease-in-out) var(--t, 0ms) backwards; }
+  [data-on="true"] .ring { animation: pulse 1.6s var(--ease-out) var(--t, 0ms) 3; }
+  /* Swap: "before" label hides at --t, "after" shows */
+  [data-on="false"] .swap-after { opacity: 0; }
+  [data-on="true"] .swap-before { animation: fade 0.25s ease var(--t, 0ms) reverse both; }
+  [data-on="true"] .swap-after { animation: fade 0.25s ease var(--t, 0ms) backwards; }
+
+  /* Sticky stage panels cross-fade by active step (interruptible transitions) */
+  .stage-panel {
+    transition: opacity 380ms var(--ease-out), transform 380ms var(--ease-out);
+  }
+  .stage-panel[data-on="false"] {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+    pointer-events: none;
+  }
+  .step-copy { transition: opacity 300ms ease; }
+  .step-copy[data-on="false"] { opacity: 0.35; }
+  .progress-fill { transition: transform 500ms var(--ease-out); }
+
+  @supports (animation-timeline: view()) {
+    [data-reveal] {
+      animation: fade-up linear both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 45%;
+    }
+  }
+}
+
+/* Without motion every stage state is drawn statically in the flow */
+.stage-sticky { display: none; }
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .stage-sticky { display: block; }
+  .stage-inline { display: none; }
+}
+.swap-before { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .swap-before { display: inline; }
+  .swap-stack { display: inline-grid; }
+  .swap-stack > * { grid-area: 1 / 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .stamp, .pulse-dot { animation: none; }
 }
