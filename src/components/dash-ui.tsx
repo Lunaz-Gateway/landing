@@ -920,9 +920,10 @@ const REQ = `POST /v1/invoices
 Authorization: Bearer lz_...
 
 { "amount_zat": 10000 }`;
-const HOOK = `X-Lunaz-Signature: 8e13de7b...
+const HOOK = `X-Lunaz-Signature: t=1791914886,v1=8e13de7b...
 
 {
+  "id": "5dafb709-...",
   "type": "invoice.paid",
   "status": "paid",
   "received_zat": 10000

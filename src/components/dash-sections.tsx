@@ -424,15 +424,21 @@ export function ApiKeys({ keys }: { keys: ApiKey[] }) {
 
 const SNIPPET = `import { createHmac, timingSafeEqual } from "node:crypto";
 
+// header: X-Lunaz-Signature, "t=<unix seconds>,v1=<hex>"
 // rawBody: the request body as received, before JSON parsing
-function verify(rawBody, signature, secret) {
-  const hex = createHmac("sha256", secret).update(rawBody).digest("hex");
-  const a = Buffer.from(hex);
-  const b = Buffer.from(signature ?? "");
-  return a.length === b.length && timingSafeEqual(a, b);
+function verify(rawBody, header, secret, toleranceSecs = 300) {
+  const parts = Object.fromEntries(
+    (header ?? "").split(",").map((p) => p.trim().split("=", 2)),
+  );
+  const t = Number(parts.t);
+  if (!Number.isInteger(t) || !/^[0-9a-f]{64}$/.test(parts.v1 ?? "")) return false;
+  if (Math.abs(Date.now() / 1000 - t) > toleranceSecs) return false; // replay
+  const want = createHmac("sha256", secret).update(\`\${t}.\${rawBody}\`).digest();
+  return timingSafeEqual(Buffer.from(parts.v1, "hex"), want);
 }
 
-// verify(raw, req.headers["x-lunaz-signature"], process.env.LUNAZ_WEBHOOK_SECRET)`;
+// if (!verify(raw, req.headers["x-lunaz-signature"], process.env.LUNAZ_WEBHOOK_SECRET)) return 401
+// Retries resend the same event: skip X-Lunaz-Event-Id values you already processed.`;
 
 const okCode = (c: number | null) => c !== null && c >= 200 && c < 300;
 
@@ -583,10 +589,19 @@ export function Webhooks({
 					description={
 						<>
 							Each request carries{" "}
+							<code className="font-mono text-kertas/85">X-Lunaz-Event-Id</code>{" "}
+							(the same on every retry) and{" "}
 							<code className="font-mono text-kertas/85">
-								X-Lunaz-Signature
+								X-Lunaz-Signature: t=…,v1=…
 							</code>
-							, the HMAC-SHA256 hex of the raw body. The JSON body has a{" "}
+							, the HMAC-SHA256 hex of{" "}
+							<code className="font-mono text-kertas/85">
+								{"{t}.{raw body}"}
+							</code>
+							. Reject a t more than 5 minutes off and de-duplicate by event id.
+							The JSON body has an{" "}
+							<code className="font-mono text-kertas/85">id</code>,{" "}
+							<code className="font-mono text-kertas/85">created_at</code> and a{" "}
 							<code className="font-mono text-kertas/85">type</code>:
 							invoice.paid, invoice.underpaid, swap.refunded, swap.failed,
 							swap.incomplete_deposit, withdrawal.updated, plan.updated or test.

@@ -532,8 +532,9 @@ Authorization: Bearer lz_...
   "status": "pending"
 }
 
-# invoice.paid, retried after 10 s, 60 s, 300 s
-X-Lunaz-Signature: <hex HMAC-SHA256 of the body>`;
+# invoice.paid, retried after 10 s and 60 s
+X-Lunaz-Event-Id: <event id>
+X-Lunaz-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256 of "{t}.{body}">`;
 	const items = [
 		[
 			"Invoices and live status",
