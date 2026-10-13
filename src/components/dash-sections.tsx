@@ -11,6 +11,7 @@ import {
 	type LimitHit,
 	retryFailedWebhookEvents,
 	retryWebhookEvent,
+	revealWebhookSecret,
 	revokeKey,
 	rotateSecret,
 	saveWebhook,
@@ -26,6 +27,7 @@ import {
 	Card,
 	ConfirmDialog,
 	CopyButton,
+	copyText,
 	Dialog,
 	EmptyState,
 	ErrorText,
@@ -452,13 +454,13 @@ export function Webhooks({
 	webhook,
 	events,
 }: {
-	webhook: { url: string | null; secret: string };
+	webhook: { url: string | null };
 	events: WebhookEvent[];
 }) {
 	const router = useRouter();
 	const { run, busy } = useAction();
 	const [url, setUrl] = useState(webhook.url ?? "");
-	const [show, setShow] = useState(false);
+	const [secret, setSecret] = useState<string | null>(null);
 	const [rotating, setRotating] = useState(false);
 	const [test, setTest] = useState<{ ok: boolean; text: string } | null>(null);
 	const dirty = url.trim() !== (webhook.url ?? "");
@@ -557,21 +559,32 @@ export function Webhooks({
 				>
 					<div className="flex flex-wrap items-center gap-2">
 						<code className="flex h-9 min-w-0 flex-1 basis-64 items-center overflow-hidden rounded-lg border border-white/[0.08] bg-[#171a36] px-3 font-mono text-[13px]">
-							<span className="truncate">
-								{show ? webhook.secret : "•".repeat(32)}
-							</span>
+							<span className="truncate">{secret ?? "•".repeat(32)}</span>
 						</code>
 						<Button
-							icon={show ? "eyeOff" : "eye"}
-							onClick={() => setShow(!show)}
-							aria-pressed={show}
+							icon={secret ? "eyeOff" : "eye"}
+							onClick={() =>
+								secret
+									? setSecret(null)
+									: run("reveal", async () => {
+											setSecret((await revealWebhookSecret()).secret);
+										})
+							}
+							aria-pressed={!!secret}
 						>
-							{show ? "Hide" : "Reveal"}
+							{secret ? "Hide" : "Reveal"}
 						</Button>
-						<CopyButton
-							text={webhook.secret}
-							toastMsg="Signing secret copied"
-						/>
+						<Button
+							icon="copy"
+							onClick={() =>
+								run("copy-secret", async () => {
+									const { secret: s } = await revealWebhookSecret();
+									await copyText(s, "Signing secret copied");
+								})
+							}
+						>
+							Copy
+						</Button>
 						<Button
 							variant="danger-soft"
 							icon="rotate"
@@ -621,9 +634,8 @@ export function Webhooks({
 					run(
 						"rotate",
 						async () => {
-							await rotateSecret();
+							setSecret((await rotateSecret()).secret);
 							await router.invalidate();
-							setShow(true);
 						},
 						"Secret rotated. Update your server now.",
 					)
@@ -1106,7 +1118,7 @@ function ExportDialog({
 
 // Mainnet only; Blockchair indexes Zcash transactions by txid
 const explorer = (txid: string) =>
-	`https://blockchair.com/zcash/transaction/${txid}`;
+	`https://blockchair.com/zcash/transaction/${encodeURIComponent(txid)}`;
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
 	return (

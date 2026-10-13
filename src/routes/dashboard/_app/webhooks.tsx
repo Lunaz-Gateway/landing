@@ -5,12 +5,12 @@ import {
 	Webhooks,
 } from "#/components/dash-sections";
 import { PageError, Skeleton } from "#/components/dash-ui";
-import { getWebhook, listWebhookEvents } from "#/server/dash";
+import { getWebhookUrl, listWebhookEvents } from "#/server/dash";
 
 export const Route = createFileRoute("/dashboard/_app/webhooks")({
 	loader: async () => {
 		const [webhook, events] = await Promise.all([
-			getWebhook(),
+			getWebhookUrl(),
 			listWebhookEvents(),
 		]);
 		return { webhook, events };

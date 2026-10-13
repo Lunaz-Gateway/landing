@@ -2,7 +2,7 @@ import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { Overview } from "#/components/dash-overview";
 import { PageSkeleton, TableSkeleton } from "#/components/dash-sections";
 import { PageError, Skeleton } from "#/components/dash-ui";
-import { getPlan, getWebhook, listInvoices, listKeys } from "#/server/dash";
+import { getPlan, getWebhookUrl, listInvoices, listKeys } from "#/server/dash";
 
 const useAccount = () => getRouteApi("/dashboard/_app").useLoaderData();
 
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/dashboard/_app/")({
 		const [keys, invoices, webhook, plan] = await Promise.all([
 			listKeys(),
 			listInvoices(),
-			getWebhook(),
+			getWebhookUrl(),
 			getPlan().catch(() => null),
 		]);
 		return { keys, invoices, webhook, plan };
