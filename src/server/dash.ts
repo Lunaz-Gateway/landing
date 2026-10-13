@@ -293,3 +293,127 @@ export const exportCsv = createServerFn({ method: "POST" })
 		);
 		return { csv: text, filename: m?.[1] ?? "lunaz-export.csv" };
 	});
+
+/* ---------- Off-ramp (withdraw to bank) ---------- */
+
+export type Offramp = {
+	provider: "mock" | "transfi";
+	sandbox: boolean;
+	currencies: string[];
+	min_zat: number;
+	received_zat: number;
+	zec_usd: number | null;
+};
+export type Quote = {
+	amount_zat: number;
+	currency: string;
+	rate: string;
+	fee_fiat: string;
+	network_fee_zat: number;
+	fiat_amount: string;
+	expires_at: number;
+};
+export type WithdrawalStatus =
+	| "awaiting_kyc"
+	| "awaiting_deposit"
+	| "deposit_received"
+	| "converting"
+	| "payout_processing"
+	| "completed"
+	| "expired"
+	| "failed"
+	| "cancelled";
+export type Withdrawal = {
+	id: string;
+	provider: string;
+	status: WithdrawalStatus;
+	amount_zat: number;
+	fiat_currency: string;
+	fiat_amount: string;
+	rate: string;
+	fee_fiat: string;
+	network_fee_zat: number;
+	deposit_address: string;
+	deposit_uri: string;
+	bank_label: string | null;
+	provider_ref: string | null;
+	created_at: number;
+	updated_at: number;
+	expires_at: number;
+	events: {
+		status: WithdrawalStatus;
+		note: string;
+		created_at: number;
+	}[];
+};
+
+const amountIn = (data: In) => {
+	const amount_zat = Number(data.amount_zat);
+	if (!Number.isSafeInteger(amount_zat) || amount_zat <= 0)
+		throw new ApiError("Enter a valid amount", 400);
+	return { amount_zat, currency: str(data.currency).toUpperCase() };
+};
+const wd = (data: In, action = "") =>
+	`/v1/account/withdrawals/${encodeURIComponent(str(data.id))}${action}`;
+
+export const getOfframp = createServerFn({ method: "GET" }).handler(
+	async () => (await authed("/v1/account/offramp")) as Offramp,
+);
+
+export const listWithdrawals = createServerFn({ method: "GET" }).handler(
+	async () =>
+		(await authed("/v1/account/withdrawals?limit=50")) as Withdrawal[],
+);
+
+export const getWithdrawal = createServerFn({ method: "GET" })
+	.inputValidator(input)
+	.handler(async ({ data }) => (await authed(wd(data))) as Withdrawal);
+
+export const quoteWithdrawal = createServerFn({ method: "POST" })
+	.inputValidator(input)
+	.handler(
+		async ({ data }) =>
+			(await authed(
+				"/v1/account/withdrawals/quote",
+				"POST",
+				amountIn(data),
+			)) as Quote,
+	);
+
+export const createWithdrawal = createServerFn({ method: "POST" })
+	.inputValidator(input)
+	.handler(
+		async ({ data }) =>
+			(await authed(
+				"/v1/account/withdrawals",
+				"POST",
+				amountIn(data),
+			)) as Withdrawal,
+	);
+
+// Only the bank name and last 4 digits ever leave the browser
+export const submitKyc = createServerFn({ method: "POST" })
+	.inputValidator(input)
+	.handler(async ({ data }) => {
+		const account_last4 = str(data.account_last4);
+		if (!/^\d{4}$/.test(account_last4))
+			throw new ApiError("Enter a valid account number", 400);
+		return (await authed(wd(data, "/kyc"), "POST", {
+			bank_name: str(data.bank_name),
+			account_last4,
+		})) as Withdrawal;
+	});
+
+export const simulateDeposit = createServerFn({ method: "POST" })
+	.inputValidator(input)
+	.handler(
+		async ({ data }) =>
+			(await authed(wd(data, "/simulate-deposit"), "POST")) as Withdrawal,
+	);
+
+export const cancelWithdrawal = createServerFn({ method: "POST" })
+	.inputValidator(input)
+	.handler(
+		async ({ data }) =>
+			(await authed(wd(data, "/cancel"), "POST")) as Withdrawal,
+	);
