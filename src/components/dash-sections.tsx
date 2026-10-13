@@ -632,7 +632,7 @@ export function Webhooks({
 							, the HMAC-SHA256 hex of the raw body. The JSON body has a{" "}
 							<code className="font-mono text-kertas/85">type</code>:
 							invoice.paid, invoice.underpaid, swap.refunded, swap.failed,
-							swap.incomplete_deposit or test.
+							swap.incomplete_deposit, withdrawal.updated or test.
 						</>
 					}
 				>

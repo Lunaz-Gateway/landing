@@ -393,6 +393,10 @@ function QuickActions({ hasWebhook }: { hasWebhook: boolean }) {
 					{ic("download")}
 					<span className="flex-1">Export CSV for your accountant</span>
 				</Link>
+				<Link to="/dashboard/withdraw" className={item}>
+					{ic("bank")}
+					<span className="flex-1">Withdraw to bank</span>
+				</Link>
 				{hasWebhook ? (
 					<button
 						type="button"
