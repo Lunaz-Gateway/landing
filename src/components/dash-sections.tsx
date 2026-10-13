@@ -822,9 +822,9 @@ function WebhookEvents({ events }: { events: WebhookEvent[] }) {
 							<td className={`${td} tabular-nums`} data-label="Attempts">
 								{e.attempts} / {e.max_attempts}
 							</td>
-							<td className={td} data-label="Last result">
+							<td className={td} data-label="Last result" data-wide>
 								<span
-									className="inline-block max-w-56 truncate align-bottom text-kertas/75"
+									className="block truncate text-kertas/75 sm:inline-block sm:max-w-56 sm:align-bottom"
 									title={e.last_error ?? undefined}
 								>
 									{result(e.last_status_code, e.last_error)}
