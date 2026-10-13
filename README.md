@@ -95,3 +95,13 @@ services:
 - The container must reach core-service at `LUNAZ_API_URL`. That URL is internal and is never sent to the browser.
 - Changing `VITE_DEMO_URL`, `VITE_DOCS_URL` or `VITE_MAGIC_PUBLISHABLE_KEY` requires a rebuild. `MAGIC_SECRET_KEY` and `LUNAZ_INTERNAL_TOKEN` are runtime env only; never pass them as build args.
 - Add the site origin to the allowed domains in the Magic dashboard.
+- `LUNAZ_API_URL` is the core-service base without `/v1`, for example `https://example.com/api` (prefix stripped by the proxy) or `http://<core-service container>:8080` on a shared Docker network.
+- `LUNAZ_INTERNAL_TOKEN` must be identical on landing and core-service.
+
+### Sign-in troubleshooting
+
+- "Sign-in is not configured" right when the login page opens: the image was built without `VITE_MAGIC_PUBLISHABLE_KEY`. Pass it as a build arg and rebuild.
+- Server log `signInWithMagic: MAGIC_SECRET_KEY or LUNAZ_INTERNAL_TOKEN unset`: set both as runtime env.
+- Server log `exchange failed 503 internal auth not configured`: set `LUNAZ_INTERNAL_TOKEN` on core-service.
+- Server log `exchange failed 401`: the internal token differs between the two services.
+- Server log `exchange failed 404`: wrong `LUNAZ_API_URL` (prefix not stripped) or an old core-service without `/v1/auth/exchange`.
