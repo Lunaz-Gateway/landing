@@ -13,6 +13,7 @@ import {
 	revokeKey,
 	rotateSecret,
 	saveWebhook,
+	setName,
 	testWebhook,
 } from "#/server/dash";
 import {
@@ -25,6 +26,8 @@ import {
 	CopyButton,
 	Dialog,
 	EmptyState,
+	ErrorText,
+	errMsg,
 	Icon,
 	Input,
 	Mono,
@@ -1247,5 +1250,44 @@ export function Invoices({
 				onClose={() => setSearch({ ...search, export: undefined })}
 			/>
 		</>
+	);
+}
+
+/** Business name editor; used as a prompt on Overview and in Settings */
+export function NameForm({ initial = "" }: { initial?: string }) {
+	const router = useRouter();
+	const [name, setNameValue] = useState(initial);
+	const [error, setError] = useState("");
+	const [busy, setBusy] = useState(false);
+	return (
+		<form
+			className="space-y-3"
+			onSubmit={async (e) => {
+				e.preventDefault();
+				setBusy(true);
+				setError("");
+				try {
+					await setName({ data: { name } });
+					await router.invalidate();
+				} catch (err) {
+					setError(errMsg(err));
+				}
+				setBusy(false);
+			}}
+		>
+			<Input
+				id="shop-name"
+				label="Your shop or business name"
+				autoComplete="organization"
+				value={name}
+				onChange={(e) => setNameValue(e.target.value)}
+				maxLength={80}
+				required
+			/>
+			<ErrorText error={error} />
+			<Button type="submit" variant="primary" size="sm" pending={busy}>
+				Save name
+			</Button>
+		</form>
 	);
 }

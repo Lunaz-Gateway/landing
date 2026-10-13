@@ -19,6 +19,7 @@ import {
 	CreateKeyForm,
 	curlFor,
 	KeyRevealDialog,
+	NameForm,
 	type NewKey,
 	StatusPill,
 } from "./dash-sections";
@@ -220,13 +221,24 @@ export function Overview({ account, keys, invoices, webhook, plan }: Props) {
 		</section>
 	);
 
+	const namePrompt = !account.name && (
+		<Card
+			title="What should we call your shop?"
+			description="Optional. Shown in your dashboard."
+			className="mb-6"
+		>
+			<NameForm />
+		</Card>
+	);
+
 	if (!onboarded)
 		return (
 			<>
 				<PageHeader
-					title={`Welcome, ${account.name}`}
+					title={account.name ? `Welcome, ${account.name}` : "Welcome"}
 					description="A few steps and you're ready to take private payments."
 				/>
+				{namePrompt}
 				{timeline}
 			</>
 		);
@@ -235,8 +247,9 @@ export function Overview({ account, keys, invoices, webhook, plan }: Props) {
 		<>
 			<PageHeader
 				title="Overview"
-				description={`Welcome back, ${account.name}.`}
+				description={`Welcome back${account.name ? `, ${account.name}` : ""}.`}
 			/>
+			{namePrompt}
 			<div className="space-y-6">
 				{plan && <UsageStrip plan={plan} />}
 				<Stats invoices={invoices} />

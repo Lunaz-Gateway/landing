@@ -282,40 +282,6 @@ export function Select({
 	);
 }
 
-export function PasswordField({
-	label,
-	hint,
-	...props
-}: {
-	label: string;
-	hint?: string;
-} & React.InputHTMLAttributes<HTMLInputElement>) {
-	const [show, setShow] = useState(false);
-	return (
-		<FieldShell label={label} hint={hint} id="password">
-			<div className="relative">
-				<input
-					id="password"
-					name="password"
-					type={show ? "text" : "password"}
-					aria-describedby={hint ? "password-hint" : undefined}
-					className={`${control} h-9 pr-11`}
-					{...props}
-				/>
-				<button
-					type="button"
-					onClick={() => setShow(!show)}
-					aria-label={show ? "Hide password" : "Show password"}
-					aria-pressed={show}
-					className="dash-focus absolute inset-y-0 right-0 grid w-10 place-items-center rounded-r-lg text-kertas/55 hover:text-kertas"
-				>
-					<Icon name={show ? "eyeOff" : "eye"} />
-				</button>
-			</div>
-		</FieldShell>
-	);
-}
-
 /** Form-level error banner, announced on change */
 export function ErrorText({ error }: { error: string }) {
 	return (

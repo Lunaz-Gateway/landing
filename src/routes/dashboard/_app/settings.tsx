@@ -3,6 +3,7 @@ import {
 	getRouteApi,
 	useNavigate,
 } from "@tanstack/react-router";
+import { NameForm } from "#/components/dash-sections";
 import {
 	Badge,
 	Button,
@@ -10,6 +11,7 @@ import {
 	PageHeader,
 	useAction,
 } from "#/components/dash-ui";
+import { signOutMagic } from "#/lib/magic";
 import { logout } from "#/server/dash";
 
 const useAccount = () => getRouteApi("/dashboard/_app").useLoaderData();
@@ -44,7 +46,9 @@ function Settings() {
 			<div className="space-y-6">
 				<Card title="Account" flush>
 					<dl className="divide-y divide-white/[0.06] border-t border-white/[0.08] px-5">
-						<Item label="Name">{account.name}</Item>
+						<Item label="Name">
+							<NameForm key={account.name} initial={account.name} />
+						</Item>
 						<Item label="Email">{account.email}</Item>
 						<Item label="Network">
 							<Badge tone={account.network === "main" ? "success" : "neutral"}>
@@ -86,6 +90,7 @@ function Settings() {
 						pending={busy === "out"}
 						onClick={() =>
 							run("out", async () => {
+								await signOutMagic();
 								await logout();
 								await navigate({ to: "/dashboard/login" });
 							})

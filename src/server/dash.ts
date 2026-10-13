@@ -112,26 +112,66 @@ const str = (v: unknown) => String(v ?? "");
 type In = Record<string, unknown>;
 const input = (d: unknown) => (d ?? {}) as In;
 
-export const signup = createServerFn({ method: "POST" })
+const NOT_CONFIGURED = "Sign-in is not configured. Contact support.";
+
+// Magic only proves the email; the Lunaz session comes from core-service
+export const signInWithMagic = createServerFn({ method: "POST" })
 	.inputValidator(input)
 	.handler(async ({ data }) => {
-		const r = (await call("/v1/auth/signup", "POST", {
-			email: str(data.email),
-			name: str(data.name),
-			password: str(data.password),
-		})) as { token: string };
+		const didToken = str(data.didToken);
+		const secret = process.env.MAGIC_SECRET_KEY;
+		const internal = process.env.LUNAZ_INTERNAL_TOKEN;
+		if (!secret || !internal) {
+			console.error(
+				"signInWithMagic: MAGIC_SECRET_KEY or LUNAZ_INTERNAL_TOKEN unset",
+			);
+			throw new ApiError(NOT_CONFIGURED, 503);
+		}
+		if (!didToken) throw new ApiError("Sign-in failed. Try again.", 400);
+		const { Magic } = await import("@magic-sdk/admin");
+		const magic = await Magic.init(secret);
+		let email: string | null | undefined;
+		try {
+			magic.token.validate(didToken);
+			email = (await magic.users.getMetadataByToken(didToken)).email;
+		} catch (e) {
+			console.error("signInWithMagic: magic verification failed", e);
+			throw new ApiError("Sign-in failed. Try again.", 401);
+		}
+		if (!email) throw new ApiError("No email found for this sign-in.", 400);
+		let r: { token: string; new_account: boolean; merchant_id: string };
+		try {
+			r = (await call(
+				"/v1/auth/exchange",
+				"POST",
+				{ email },
+				internal,
+			)) as typeof r;
+		} catch (e) {
+			if (e instanceof ApiError) {
+				console.error("signInWithMagic: exchange failed", e.status, e.message);
+				if (e.status === 401 || e.status === 503)
+					throw new ApiError(NOT_CONFIGURED, 503);
+				if (e.status === 429)
+					throw new ApiError(
+						"Too many attempts. Wait a minute and try again.",
+						429,
+					);
+			}
+			throw e;
+		}
 		startSession(r.token);
-		return { ok: true };
+		await magic.users.logoutByToken(didToken).catch(() => {});
+		return { ok: true, new_account: r.new_account };
 	});
 
-export const login = createServerFn({ method: "POST" })
+export const setName = createServerFn({ method: "POST" })
 	.inputValidator(input)
 	.handler(async ({ data }) => {
-		const r = (await call("/v1/auth/login", "POST", {
-			email: str(data.email),
-			password: str(data.password),
-		})) as { token: string };
-		startSession(r.token);
+		const name = str(data.name).trim();
+		if (!name || name.length > 80)
+			throw new ApiError("Enter a name up to 80 characters", 400);
+		await authed("/v1/account", "PUT", { name });
 		return { ok: true };
 	});
 

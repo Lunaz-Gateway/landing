@@ -20,6 +20,7 @@ import {
 	Toaster,
 	useAction,
 } from "#/components/dash-ui";
+import { signOutMagic } from "#/lib/magic";
 import { type Account, getAccount, logout } from "#/server/dash";
 
 export const Route = createFileRoute("/dashboard/_app")({
@@ -71,7 +72,9 @@ function Sidebar({ account }: { account: Account }) {
 			</div>
 			<div className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5">
 				<div className="flex items-center justify-between gap-2">
-					<p className="truncate text-sm font-bold">{account.name}</p>
+					<p className="truncate text-sm font-bold">
+						{account.name || account.email}
+					</p>
 					{account.plan && (
 						<Link
 							to="/dashboard/billing"
@@ -121,6 +124,7 @@ function Sidebar({ account }: { account: Account }) {
 					disabled={busy === "out"}
 					onClick={() =>
 						run("out", async () => {
+							await signOutMagic();
 							await logout();
 							await navigate({ to: "/dashboard/login" });
 						})
@@ -188,7 +192,7 @@ function Shell() {
 					<nav aria-label="Breadcrumb" className="min-w-0 flex-1">
 						<ol className="flex items-center gap-1.5 text-sm">
 							<li className="hidden truncate text-kertas/55 sm:block">
-								{account.name}
+								{account.name || account.email}
 							</li>
 							<li aria-hidden="true" className="hidden text-kertas/25 sm:block">
 								/

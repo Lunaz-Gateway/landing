@@ -5,7 +5,7 @@ Marketing site and developer dashboard for Lunaz, a Zcash payment gateway. Built
 ## Features
 
 - Marketing page at `/` with a link to the Sunday Market demo.
-- Signup and login (`/dashboard/signup`, `/dashboard/login`).
+- Passwordless sign-in with email OTP via Magic (`/dashboard/login`; `/dashboard/signup` redirects there). First sign-in creates the account.
 - Viewing key (UFVK) onboarding, so the gateway can watch for payments without spend authority.
 - API keys: create (shown once) and revoke.
 - Webhook endpoint, signing secret rotation, test delivery and a delivery log.
@@ -24,12 +24,16 @@ browser --> TanStack Start server functions (src/server/dash.ts) --> core-servic
 - The browser never talks to core-service. All calls go through server functions.
 - The core-service session token is stored in an `httpOnly`, `SameSite=Lax` cookie (`lunaz_session`, 7 days). It is `Secure` when `NODE_ENV=production`. Client code never sees the token.
 - A 401 from core-service clears the cookie.
+- Auth: the login page loads `magic-sdk` lazily and runs `loginWithEmailOTP`. The resulting DID token goes to the `signInWithMagic` server function, which verifies it with `@magic-sdk/admin`, reads the email, and calls core-service `POST /v1/auth/exchange` with `LUNAZ_INTERNAL_TOKEN` to get the session token. Magic is used for identity only; its session is logged out right after.
 
 ## Environment
 
 | Variable | Where | Description |
 | --- | --- | --- |
 | `LUNAZ_API_URL` | server, runtime | core-service base URL (default `http://127.0.0.1:8097`) |
+| `MAGIC_SECRET_KEY` | server, runtime, secret | Magic secret key (`sk_…`), used to verify DID tokens |
+| `LUNAZ_INTERNAL_TOKEN` | server, runtime, secret | Bearer token for core-service `/v1/auth/exchange` (must match core-service) |
+| `VITE_MAGIC_PUBLISHABLE_KEY` | public, build time | Magic publishable key (`pk_…`); sign-in shows "not configured" if empty |
 | `VITE_DEMO_URL` | public, build time | URL of the demo app behind "Try the demo" (default `http://localhost:3000`) |
 | `VITE_DOCS_URL` | public, build time | URL of the documentation site behind "Docs" (default `http://localhost:4321`) |
 
@@ -51,11 +55,11 @@ bun run check      # biome
 The image is multi-stage and the final stage is `distroless/nodejs22-debian12:nonroot`: no shell, no package manager, non-root user. `.env*` files are excluded by `.dockerignore` and never enter an image layer. It has a built-in `HEALTHCHECK` that requests `/`.
 
 ```bash
-docker build --build-arg VITE_DEMO_URL=https://demo.example.com --build-arg VITE_DOCS_URL=https://docs.example.com -t lunaz-landing .
+docker build --build-arg VITE_MAGIC_PUBLISHABLE_KEY=pk_live_xxx --build-arg VITE_DEMO_URL=https://demo.example.com --build-arg VITE_DOCS_URL=https://docs.example.com -t lunaz-landing .
 
 docker run -d --name lunaz-landing --read-only --tmpfs /tmp --cap-drop ALL \
   --security-opt no-new-privileges:true --pids-limit 256 --memory 512m \
-  -p 127.0.0.1:3000:3000 -e LUNAZ_API_URL=http://core:8080 \
+  -p 127.0.0.1:3000:3000 -e LUNAZ_API_URL=http://core:8080 -e MAGIC_SECRET_KEY -e LUNAZ_INTERNAL_TOKEN \
   --restart unless-stopped lunaz-landing
 ```
 
@@ -67,6 +71,7 @@ services:
     build:
       context: .
       args:
+        VITE_MAGIC_PUBLISHABLE_KEY: pk_live_xxx
         VITE_DEMO_URL: https://demo.example.com
         VITE_DOCS_URL: https://docs.example.com
     read_only: true
@@ -78,6 +83,8 @@ services:
     ports: ["127.0.0.1:3000:3000"]
     environment:
       LUNAZ_API_URL: http://core:8080
+      MAGIC_SECRET_KEY: ${MAGIC_SECRET_KEY}
+      LUNAZ_INTERNAL_TOKEN: ${LUNAZ_INTERNAL_TOKEN}
     restart: unless-stopped
 ```
 
@@ -86,4 +93,5 @@ services:
 - Serve it over HTTPS. The session cookie is `Secure` in production, so login does not work over plain HTTP (except on `localhost` in most browsers).
 - Put a TLS reverse proxy (Caddy, nginx, Traefik) in front and publish the container on `127.0.0.1` only.
 - The container must reach core-service at `LUNAZ_API_URL`. That URL is internal and is never sent to the browser.
-- Changing `VITE_DEMO_URL` or `VITE_DOCS_URL` requires a rebuild.
+- Changing `VITE_DEMO_URL`, `VITE_DOCS_URL` or `VITE_MAGIC_PUBLISHABLE_KEY` requires a rebuild. `MAGIC_SECRET_KEY` and `LUNAZ_INTERNAL_TOKEN` are runtime env only; never pass them as build args.
+- Add the site origin to the allowed domains in the Magic dashboard.
