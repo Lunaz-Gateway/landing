@@ -98,6 +98,9 @@ const TITLES = [
 	"Track your payout",
 ];
 
+// Keeps "BCA ••••1234" on one line
+const bankText = (b: string) => b.replace(/ (?=•)/, "\u00a0");
+
 const partnerName = (p: string) =>
 	p === "transfi" ? "TransFi" : "Mock partner";
 
@@ -351,7 +354,7 @@ function Stepper({
 				<h3
 					ref={headRef}
 					tabIndex={-1}
-					className="mb-4 rounded-sm text-sm font-bold outline-none focus-visible:outline-2 focus-visible:outline-lunas"
+					className="mb-4 text-sm font-bold outline-none"
 				>
 					{TITLES[step]}
 				</h3>
@@ -789,7 +792,7 @@ function DepositStep({
 					</p>
 					<p className="text-sm text-kertas/65 tabular-nums">
 						You receive ≈ {fiat(w.fiat_amount, w.fiat_currency)}
-						{w.bank_label && ` at ${w.bank_label}`}
+						{w.bank_label && ` at ${bankText(w.bank_label)}`}
 					</p>
 				</div>
 				<CopyButton text={amount} label="Copy amount" size="sm" />
@@ -872,7 +875,7 @@ function StatusStep({ w, onReset }: { w: Withdrawal; onReset: () => void }) {
 				</div>
 				<p className="mt-1 text-2xl font-bold tracking-[-0.02em] tabular-nums text-balance">
 					{done
-						? `${fiat(w.fiat_amount, w.fiat_currency)} sent to ${w.bank_label ?? "your bank"}`
+						? `${fiat(w.fiat_amount, w.fiat_currency)} sent to ${w.bank_label ? bankText(w.bank_label) : "your bank"}`
 						: final
 							? `${STATUS[w.status].label}: ${zec(w.amount_zat)} ZEC`
 							: `≈ ${fiat(w.fiat_amount, w.fiat_currency)}`}
@@ -910,9 +913,11 @@ function Timeline({ w }: { w: Withdrawal }) {
 			state:
 				e.status === "failed"
 					? "bad"
-					: i === w.events.length - 1 && !final
-						? "now"
-						: "done",
+					: e.status === "cancelled" || e.status === "expired"
+						? "off"
+						: i === w.events.length - 1 && !final
+							? "now"
+							: "done",
 		})),
 		...ahead.map((s) => ({
 			key: s,
@@ -929,7 +934,7 @@ function Timeline({ w }: { w: Withdrawal }) {
 					{i < items.length - 1 && (
 						<span
 							aria-hidden="true"
-							className={`absolute top-4 bottom-0 left-[7px] w-px ${it.state === "todo" ? "bg-white/10" : "bg-lunas/35"}`}
+							className={`absolute top-4 bottom-0 left-[7px] w-px ${items[i + 1].state === "todo" || items[i + 1].state === "off" ? "bg-white/10" : "bg-lunas/35"}`}
 						/>
 					)}
 					<span
@@ -947,7 +952,9 @@ function Timeline({ w }: { w: Withdrawal }) {
 										? "bg-lunas ring-4 ring-lunas/20"
 										: it.state === "bad"
 											? "bg-[#ff8a7a]"
-											: "border border-white/25"
+											: it.state === "off"
+												? "bg-kertas/40"
+												: "border border-white/25"
 							}`}
 						/>
 					</span>
@@ -962,7 +969,7 @@ function Timeline({ w }: { w: Withdrawal }) {
 						</p>
 						{it.note && (
 							<p className="text-xs text-kertas/60 first-letter:uppercase">
-								{it.note}
+								{it.note.replace(/^kyc\b/i, "KYC")}
 							</p>
 						)}
 						{it.at > 0 && (
@@ -1087,7 +1094,9 @@ function WithdrawalDrawer({
 					<div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
 						<div className="flex items-start justify-between gap-3">
 							<div>
-								<p className="text-xs text-kertas/55">Payout</p>
+								<p className="text-xs text-kertas/55">
+									{x.status === "completed" ? "Paid out" : "Quoted payout"}
+								</p>
 								<p className="mt-0.5 text-2xl font-bold tracking-[-0.02em] tabular-nums">
 									{fiat(x.fiat_amount, x.fiat_currency)}
 								</p>
@@ -1096,7 +1105,7 @@ function WithdrawalDrawer({
 						</div>
 						<p className="mt-2 text-sm text-kertas/65">
 							<Amount zat={x.amount_zat} /> to {partnerName(x.provider)}
-							{x.bank_label && `, paid to ${x.bank_label}`}
+							{x.bank_label && `, payout to ${bankText(x.bank_label)}`}
 						</p>
 					</div>
 					<section>
