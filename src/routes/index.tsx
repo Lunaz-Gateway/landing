@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
-import { EventStream, GatewayFlow } from "#/components/gateway-flow";
+import { GatewayFlow } from "#/components/gateway-flow";
 import { HowItWorks } from "#/components/how-it-works";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -140,6 +140,8 @@ function Nav() {
 	);
 }
 
+const POWERED_BY = ["Zcash", "NEAR Intents", "Zebra", "lightwalletd"];
+
 function Hero() {
 	return (
 		<section className="overflow-hidden bg-malam">
@@ -169,16 +171,25 @@ function Hero() {
 							Dashboard
 						</a>
 					</div>
-					<p className="mt-5 max-w-[31rem] text-sm text-kertas/60">
-						Sunday Market is the demo: five independent shops, each its own
-						Lunaz merchant, on one gateway.
-					</p>
 				</div>
-				<div className="min-w-0 space-y-4 lg:col-span-6">
+				<div className="min-w-0 lg:col-span-6">
 					<div className="rounded-2xl border border-white/10 bg-[radial-gradient(rgba(246,242,233,0.07)_1px,transparent_1px)] bg-[size:14px_14px] p-4 sm:p-6">
 						<GatewayFlow />
 					</div>
-					<EventStream />
+				</div>
+			</div>
+			<div className="border-t border-white/10">
+				<div
+					className={`${wrap} flex flex-col gap-4 py-7 sm:flex-row sm:items-center sm:gap-10`}
+				>
+					<p className="shrink-0 font-mono text-[11px] uppercase tracking-[0.25em] text-kertas/60">
+						Powered by
+					</p>
+					<ul className="flex flex-wrap items-center gap-x-10 gap-y-3 text-lg font-bold tracking-tight text-kertas/70">
+						{POWERED_BY.map((name) => (
+							<li key={name}>{name}</li>
+						))}
+					</ul>
 				</div>
 			</div>
 		</section>
