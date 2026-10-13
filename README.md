@@ -31,6 +31,7 @@ browser --> TanStack Start server functions (src/server/dash.ts) --> core-servic
 | --- | --- | --- |
 | `LUNAZ_API_URL` | server, runtime | core-service base URL (default `http://127.0.0.1:8097`) |
 | `VITE_DEMO_URL` | public, build time | URL of the demo app behind "Try the demo" (default `http://localhost:3000`) |
+| `VITE_DOCS_URL` | public, build time | URL of the documentation site behind "Docs" (default `http://localhost:4321`) |
 
 `VITE_*` values are baked into the client bundle at build time and are public. Do not put secrets there.
 
@@ -50,7 +51,7 @@ bun run check      # biome
 The image is multi-stage and the final stage is `distroless/nodejs22-debian12:nonroot`: no shell, no package manager, non-root user. `.env*` files are excluded by `.dockerignore` and never enter an image layer. It has a built-in `HEALTHCHECK` that requests `/`.
 
 ```bash
-docker build --build-arg VITE_DEMO_URL=https://demo.example.com -t lunaz-landing .
+docker build --build-arg VITE_DEMO_URL=https://demo.example.com --build-arg VITE_DOCS_URL=https://docs.example.com -t lunaz-landing .
 
 docker run -d --name lunaz-landing --read-only --tmpfs /tmp --cap-drop ALL \
   --security-opt no-new-privileges:true --pids-limit 256 --memory 512m \
@@ -67,6 +68,7 @@ services:
       context: .
       args:
         VITE_DEMO_URL: https://demo.example.com
+        VITE_DOCS_URL: https://docs.example.com
     read_only: true
     tmpfs: [/tmp]
     cap_drop: [ALL]
@@ -84,4 +86,4 @@ services:
 - Serve it over HTTPS. The session cookie is `Secure` in production, so login does not work over plain HTTP (except on `localhost` in most browsers).
 - Put a TLS reverse proxy (Caddy, nginx, Traefik) in front and publish the container on `127.0.0.1` only.
 - The container must reach core-service at `LUNAZ_API_URL`. That URL is internal and is never sent to the browser.
-- Changing `VITE_DEMO_URL` requires a rebuild.
+- Changing `VITE_DEMO_URL` or `VITE_DOCS_URL` requires a rebuild.

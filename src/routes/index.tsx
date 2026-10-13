@@ -5,9 +5,8 @@ import { HowItWorks } from "#/components/how-it-works";
 
 export const Route = createFileRoute("/")({ component: Home });
 
-// Placeholder until the repository is public
-const GITHUB = "https://github.com";
 const DEMO = import.meta.env.VITE_DEMO_URL ?? "http://localhost:3000";
+const DOCS = import.meta.env.VITE_DOCS_URL ?? "http://localhost:4321";
 const SHOPS = [
 	"Dusk Coffee",
 	"House of Batik",
@@ -124,8 +123,8 @@ function Nav() {
 					<a className={`${link} hidden lg:inline`} href="#security">
 						Security
 					</a>
-					<a className={`${link} hidden md:inline`} href="#developers">
-						Developers
+					<a className={`${link} hidden md:inline`} href={DOCS}>
+						Docs
 					</a>
 					<a
 						href={DEMO}
@@ -570,10 +569,10 @@ X-Lunaz-Signature: <hex HMAC-SHA256 of the body>`;
 						))}
 					</dl>
 					<a
-						href="/dashboard"
+						href={DOCS}
 						className="press mt-10 inline-flex rounded-full border border-white/20 px-6 py-3.5 font-bold transition-colors hover:border-white/40"
 					>
-						Open the dashboard
+						Open the docs
 					</a>
 				</div>
 				<pre
@@ -670,12 +669,6 @@ function Closing() {
 				</h2>
 				<div className="mt-12 flex flex-wrap items-center gap-6">
 					<DemoButton dark />
-					<a
-						href={GITHUB}
-						className="font-bold underline decoration-malam/30 underline-offset-[6px]"
-					>
-						View on GitHub
-					</a>
 				</div>
 			</div>
 		</section>
@@ -705,8 +698,8 @@ function Footer() {
 					<a className="text-lunas hover:underline" href={DEMO}>
 						Sunday Market
 					</a>
-					<a className="text-lunas hover:underline" href={GITHUB}>
-						GitHub
+					<a className="text-lunas hover:underline" href={DOCS}>
+						Docs
 					</a>
 				</div>
 			</div>

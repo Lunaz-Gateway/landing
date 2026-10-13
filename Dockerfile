@@ -11,10 +11,11 @@ RUN bun install --frozen-lockfile --production
 
 FROM deps AS build
 COPY . .
-# VITE_DEMO_URL is public and baked into the client bundle at build time:
+# VITE_* values are public and baked into the client bundle at build time:
 # never pass secrets as build args.
 ARG VITE_DEMO_URL=http://localhost:3000
-ENV VITE_DEMO_URL=$VITE_DEMO_URL
+ARG VITE_DOCS_URL=http://localhost:4321
+ENV VITE_DEMO_URL=$VITE_DEMO_URL VITE_DOCS_URL=$VITE_DOCS_URL
 RUN bun run build
 
 FROM gcr.io/distroless/nodejs22-debian12:nonroot
