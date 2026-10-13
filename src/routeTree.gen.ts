@@ -18,6 +18,7 @@ import { Route as DashboardAppInvoicesRouteImport } from './routes/dashboard/_ap
 import { Route as DashboardAppKeysRouteImport } from './routes/dashboard/_app/keys'
 import { Route as DashboardAppSettingsRouteImport } from './routes/dashboard/_app/settings'
 import { Route as DashboardAppWebhooksRouteImport } from './routes/dashboard/_app/webhooks'
+import { Route as DashboardAppWithdrawRouteImport } from './routes/dashboard/_app/withdraw'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -64,6 +65,11 @@ const DashboardAppWebhooksRoute = DashboardAppWebhooksRouteImport.update({
   path: '/webhooks',
   getParentRoute: () => DashboardAppRoute,
 } as any)
+const DashboardAppWithdrawRoute = DashboardAppWithdrawRouteImport.update({
+  id: '/withdraw',
+  path: '/withdraw',
+  getParentRoute: () => DashboardAppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/keys': typeof DashboardAppKeysRoute
   '/dashboard/settings': typeof DashboardAppSettingsRoute
   '/dashboard/webhooks': typeof DashboardAppWebhooksRoute
+  '/dashboard/withdraw': typeof DashboardAppWithdrawRoute
   '/dashboard/': typeof DashboardAppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/dashboard/keys': typeof DashboardAppKeysRoute
   '/dashboard/settings': typeof DashboardAppSettingsRoute
   '/dashboard/webhooks': typeof DashboardAppWebhooksRoute
+  '/dashboard/withdraw': typeof DashboardAppWithdrawRoute
   '/dashboard': typeof DashboardAppIndexRoute
 }
 export interface FileRoutesById {
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/dashboard/_app/keys': typeof DashboardAppKeysRoute
   '/dashboard/_app/settings': typeof DashboardAppSettingsRoute
   '/dashboard/_app/webhooks': typeof DashboardAppWebhooksRoute
+  '/dashboard/_app/withdraw': typeof DashboardAppWithdrawRoute
   '/dashboard/_app/': typeof DashboardAppIndexRoute
 }
 export interface FileRouteTypes {
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/dashboard/keys'
     | '/dashboard/settings'
     | '/dashboard/webhooks'
+    | '/dashboard/withdraw'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/dashboard/keys'
     | '/dashboard/settings'
     | '/dashboard/webhooks'
+    | '/dashboard/withdraw'
     | '/dashboard'
   id:
     | '__root__'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/dashboard/_app/keys'
     | '/dashboard/_app/settings'
     | '/dashboard/_app/webhooks'
+    | '/dashboard/_app/withdraw'
     | '/dashboard/_app/'
   fileRoutesById: FileRoutesById
 }
@@ -205,6 +217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAppWebhooksRouteImport
       parentRoute: typeof DashboardAppRoute
     }
+    '/dashboard/_app/withdraw': {
+      id: '/dashboard/_app/withdraw'
+      path: '/withdraw'
+      fullPath: '/dashboard/withdraw'
+      preLoaderRoute: typeof DashboardAppWithdrawRouteImport
+      parentRoute: typeof DashboardAppRoute
+    }
   }
 }
 
@@ -213,6 +232,7 @@ interface DashboardAppRouteChildren {
   DashboardAppKeysRoute: typeof DashboardAppKeysRoute
   DashboardAppSettingsRoute: typeof DashboardAppSettingsRoute
   DashboardAppWebhooksRoute: typeof DashboardAppWebhooksRoute
+  DashboardAppWithdrawRoute: typeof DashboardAppWithdrawRoute
   DashboardAppIndexRoute: typeof DashboardAppIndexRoute
 }
 
@@ -221,6 +241,7 @@ const DashboardAppRouteChildren: DashboardAppRouteChildren = {
   DashboardAppKeysRoute: DashboardAppKeysRoute,
   DashboardAppSettingsRoute: DashboardAppSettingsRoute,
   DashboardAppWebhooksRoute: DashboardAppWebhooksRoute,
+  DashboardAppWithdrawRoute: DashboardAppWithdrawRoute,
   DashboardAppIndexRoute: DashboardAppIndexRoute,
 }
 

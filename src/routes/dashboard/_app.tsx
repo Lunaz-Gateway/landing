@@ -38,6 +38,7 @@ const DEMO = import.meta.env.VITE_DEMO_URL ?? "http://localhost:3000";
 const NAV: { to: string; label: string; icon: IconName }[] = [
 	{ to: "/dashboard", label: "Overview", icon: "home" },
 	{ to: "/dashboard/invoices", label: "Invoices", icon: "invoice" },
+	{ to: "/dashboard/withdraw", label: "Withdraw", icon: "bank" },
 	{ to: "/dashboard/keys", label: "API keys", icon: "key" },
 	{ to: "/dashboard/webhooks", label: "Webhooks", icon: "hook" },
 	{ to: "/dashboard/settings", label: "Settings", icon: "settings" },
