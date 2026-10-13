@@ -475,7 +475,7 @@ function Security() {
 		["Server never holds", "spending key"],
 		["Funds land in", "the merchant's own wallet"],
 		["Custody", "none"],
-		["Hosting", "yours, if you want it"],
+		["Operated by", "Lunaz, fully managed"],
 	] as const;
 	return (
 		<section id="security" className="bg-malam">
@@ -489,8 +489,8 @@ function Security() {
 					<p className="mt-8 max-w-lg text-lg leading-relaxed text-kertas/75">
 						Lunaz splits seeing from spending. The gateway holds viewing keys
 						only, and checkout pages hold no keys at all. Spending keys stay in
-						each merchant's wallet. You can run the gateway yourself, the way
-						people run BTCPay Server.
+						each merchant's wallet. We run and monitor the gateway, so there is
+						nothing for you to deploy.
 					</p>
 				</div>
 				<div className="lg:col-span-5 lg:col-start-8 lg:pt-16">
@@ -608,8 +608,8 @@ function Faq() {
 			"Orchard and Ironwood, in both the mempool and mined blocks. A payment shows as detected in seconds and turns LUNAS after one confirmation, about 75 seconds.",
 		],
 		[
-			"Can I run it myself?",
-			"Yes. The gateway is one Rust service with one SQLite file, and it ships as a hardened Docker image.",
+			"Do I need to run any infrastructure?",
+			"No. Lunaz is a managed service: we run the gateway, the chain watcher and the cross-chain swaps. You sign up, connect your wallet's viewing key and call the API.",
 		],
 	] as const;
 	return (
