@@ -565,7 +565,7 @@ export type Subscription = {
 	amount_zat: number;
 	zec_usd: number;
 	invoice_id: string;
-	status: "pending" | "paid" | "expired" | "cancelled";
+	status: "pending" | "paid" | "expired" | "cancelled" | "late_paid";
 	created_at: number;
 	paid_at: number | null;
 	period_start: number | null;

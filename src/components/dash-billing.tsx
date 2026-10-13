@@ -740,9 +740,18 @@ function PayStep({
 
 const SUB: Record<
 	Subscription["status"],
-	{ label: string; tone: "success" | "neutral" | "muted" }
+	{
+		label: string;
+		tone: "success" | "warning" | "neutral" | "muted";
+		note?: string;
+	}
 > = {
 	paid: { label: "Paid", tone: "success" },
+	late_paid: {
+		label: "Paid late",
+		tone: "warning",
+		note: "The payment arrived after the invoice expired. Contact support to apply it.",
+	},
 	pending: { label: "Pending", tone: "neutral" },
 	expired: { label: "Expired", tone: "muted" },
 	cancelled: { label: "Cancelled", tone: "muted" },
@@ -800,6 +809,11 @@ function History({ history }: { history: Subscription[] }) {
 								<Badge tone={SUB[s.status]?.tone ?? "neutral"} dot>
 									{SUB[s.status]?.label ?? s.status}
 								</Badge>
+								{SUB[s.status]?.note && (
+									<span className="mt-1 block max-w-[16rem] text-xs text-kertas/60">
+										{SUB[s.status]?.note}
+									</span>
+								)}
 							</td>
 							<td className={td} data-label="Invoice">
 								<Mono
