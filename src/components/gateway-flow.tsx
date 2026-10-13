@@ -10,7 +10,7 @@ const pct = (x: number, y: number) => ({
 });
 
 const clients = [
-	["Cashier tablet", 30],
+	["Marketplace", 30],
 	["Hosted checkout", 58],
 	["Your app · API", 86],
 ] as const;
@@ -28,9 +28,21 @@ const tokenWire = (x: number, k: number) =>
 const OUT = "M102 60 H118";
 
 export function GatewayFlow() {
+	const svg = useRef<SVGSVGElement>(null);
+	// SMIL keeps running off screen; pause it there
+	useEffect(() => {
+		const el = svg.current;
+		if (!el) return;
+		const io = new IntersectionObserver(([e]) =>
+			e.isIntersecting ? el.unpauseAnimations() : el.pauseAnimations(),
+		);
+		io.observe(el);
+		return () => io.disconnect();
+	}, []);
 	return (
 		<div className="relative aspect-[160/100] w-full">
 			<svg
+				ref={svg}
 				viewBox="0 0 160 100"
 				className="absolute inset-0 size-full overflow-visible"
 				aria-hidden="true"
@@ -150,7 +162,7 @@ export function GatewayFlow() {
 				<p className="mt-[4%] text-[clamp(10px,1.7vw,15px)] font-bold">
 					Lunaz gateway
 				</p>
-				<p className="font-mono text-[clamp(7px,1.15vw,11px)] text-kertas/55">
+				<p className="font-mono text-[clamp(7px,1.15vw,11px)] text-kertas/60">
 					viewing keys only
 				</p>
 			</div>
@@ -163,10 +175,10 @@ export function GatewayFlow() {
 					Shielded
 				</p>
 				<p className="mt-[3%] text-[clamp(10px,1.7vw,15px)] font-bold leading-tight">
-					Merchant wallet
+					Each seller's wallet
 				</p>
-				<p className="mt-[3%] font-mono text-[clamp(7px,1.15vw,11px)] text-kertas/55">
-					spend key: yours
+				<p className="mt-[3%] font-mono text-[clamp(7px,1.15vw,11px)] text-kertas/60">
+					spend key: theirs
 				</p>
 			</div>
 		</div>
@@ -174,12 +186,12 @@ export function GatewayFlow() {
 }
 
 type Ev = { name: string; detail: string; lunas?: boolean };
-const events = (inv: string): Ev[] => [
-	{ name: "invoice.created", detail: `${inv} · new u1… address` },
-	{ name: "swap.pending", detail: "USDC → ZEC · NEAR Intents" },
-	{ name: "payment.detected", detail: "mempool · 0.2500 ZEC" },
-	{ name: "invoice.paid", detail: "1 confirmation", lunas: true },
-	{ name: "webhook.sent", detail: "200 OK · HMAC-SHA256" },
+const events: Ev[] = [
+	{ name: "invoice.created", detail: "house-of-batik · fresh u1… address" },
+	{ name: "swap.pending", detail: "USDC on Base → ZEC · NEAR Intents" },
+	{ name: "status.detected", detail: "mempool · orchard · 0.0010 ZEC" },
+	{ name: "status.paid", detail: "1 confirmation", lunas: true },
+	{ name: "webhook invoice.paid", detail: "200 OK · signed HMAC-SHA256" },
 ];
 const STEP_MS = 1200;
 const PAUSE_MS = 2500;
@@ -216,41 +228,44 @@ export function EventStream() {
 	}, []);
 
 	const inv = `inv_${String(run.n).padStart(4, "0")}`;
-	const log = events(inv).slice(0, run.shown);
 
 	return (
 		<div
 			ref={ref}
 			className="rounded-xl border border-white/10 bg-black/20 font-mono text-[12px] sm:text-[13px]"
 		>
-			<div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5 text-[11px] text-kertas/50">
-				<span>events · wss://…/v1/invoices/{inv}</span>
-				<span className="flex items-center gap-1.5 text-lunas">
+			<div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2.5 text-[11px] text-kertas/60">
+				<span className="truncate">events · wss://…/v1/invoices/{inv}</span>
+				<span className="flex shrink-0 items-center gap-1.5 text-lunas">
 					<span className="size-1.5 rounded-full bg-lunas" />
 					live
 				</span>
 			</div>
-			<ol
-				className="h-[8.6rem] space-y-1 px-4 py-3 sm:h-[9.2rem]"
-				aria-label="Example invoice events"
-			>
-				{log.map((e) => (
-					<li
-						key={`${inv}-${e.name}`}
-						className="ev-in flex items-center gap-3 whitespace-nowrap"
-					>
-						<span className="text-kertas/35">›</span>
-						<span className={e.lunas ? "text-lunas" : "text-kertas"}>
-							{e.name}
-						</span>
-						<span className="truncate text-kertas/45">{e.detail}</span>
-						{e.lunas && (
-							<span className="ml-auto -rotate-3 rounded bg-lunas px-1.5 font-sans text-[11px] font-extrabold tracking-tight text-malam">
-								LUNAS
+			<ol className="space-y-1 px-4 py-3" aria-label="Example invoice events">
+				{events.map((e, k) => {
+					const done = k < run.shown;
+					return (
+						<li
+							key={`${inv}-${e.name}-${done}`}
+							className={`flex min-w-0 items-center gap-3 overflow-hidden whitespace-nowrap ${done ? "ev-in" : "text-kertas/20"}`}
+						>
+							<span className={done ? "text-kertas/40" : ""}>›</span>
+							<span
+								className={done ? (e.lunas ? "text-lunas" : "text-kertas") : ""}
+							>
+								{e.name}
 							</span>
-						)}
-					</li>
-				))}
+							{done && (
+								<span className="truncate text-kertas/60">{e.detail}</span>
+							)}
+							{done && e.lunas && (
+								<span className="ml-auto -rotate-3 rounded bg-lunas px-1.5 font-sans text-[11px] font-extrabold tracking-tight text-malam">
+									LUNAS
+								</span>
+							)}
+						</li>
+					);
+				})}
 			</ol>
 		</div>
 	);

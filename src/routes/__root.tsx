@@ -16,7 +16,7 @@ export const Route = createRootRoute({
 			{
 				name: "description",
 				content:
-					"Lunaz is a non-custodial payment gateway API for shielded Zcash: a fresh shielded address per invoice, payments from other chains through NEAR Intents, real-time status and signed webhooks. Pay with anything. Settled in private.",
+					"Lunaz is a non-custodial payment gateway for shielded Zcash. A fresh shielded address per invoice, payments from other chains through NEAR Intents, signed webhooks, and every merchant or marketplace seller paid straight to its own wallet.",
 			},
 			{ name: "theme-color", content: "#1C1F3D" },
 			{ property: "og:type", content: "website" },
@@ -27,7 +27,7 @@ export const Route = createRootRoute({
 			{
 				property: "og:description",
 				content:
-					"Lunaz is a non-custodial payment gateway API for shielded Zcash: a fresh shielded address per invoice, payments from other chains through NEAR Intents, real-time status and signed webhooks. Pay with anything. Settled in private.",
+					"Lunaz is a non-custodial payment gateway for shielded Zcash. A fresh shielded address per invoice, payments from other chains through NEAR Intents, signed webhooks, and every merchant or marketplace seller paid straight to its own wallet.",
 			},
 			{ property: "og:image", content: "/icon-512.png" },
 			{ name: "twitter:card", content: "summary" },

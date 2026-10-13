@@ -11,24 +11,24 @@ const t = (ms: number) => ({ "--t": `${ms}ms` }) as CSSProperties;
 const steps = [
 	{
 		title: "Invoice",
-		body: "The cashier types an amount. Lunaz derives a fresh shielded Orchard address for this invoice from the merchant viewing key, so no two invoices share an address and nothing links them to your store.",
+		body: "A buyer places an order and the shop's backend creates an invoice with its API key. Lunaz derives a fresh shielded address for it from that merchant's viewing key. No two invoices share an address, so nothing on chain links them to each other or to the shop.",
 	},
 	{
 		title: "Pay",
-		body: "A ZEC buyer scans the ZIP-321 QR from their wallet. A buyer holding USDC or SOL on another chain pays a one-time deposit address from NEAR Intents; solvers swap it and deliver shielded ZEC straight to the invoice address.",
-		note: "The NEAR Intents path is in progress. Direct shielded ZEC comes first.",
+		body: "A ZEC buyer scans the ZIP-321 QR with their wallet. A buyer holding USDC, USDT, SOL, ETH or BTC gets a one-time deposit address from NEAR Intents, which swaps the funds and delivers shielded ZEC straight to the invoice address.",
+		note: "Cross-chain needs an invoice of at least 0.001 ZEC. The deposit on the origin chain is public; nothing links it to the shop.",
 	},
 	{
 		title: "Detected",
-		body: "The payment watcher sees the transaction in the mempool and matches it to the invoice. The cashier screen moves from Waiting to Detected in seconds, before the block lands.",
+		body: "The watcher trial-decrypts Orchard and Ironwood actions in the mempool with the merchant's viewing key and matches the payment to its invoice. Checkout moves from Waiting to Detected in seconds, before the block lands.",
 	},
 	{
 		title: "LUNAS",
-		body: "One block confirmation, about 75 seconds, and the screen turns LUNAS. Paid in full.",
+		body: "After one block confirmation, about 75 seconds, the invoice turns LUNAS: paid in full. The shop's backend gets a signed webhook. A short payment is marked underpaid, never paid.",
 	},
 	{
 		title: "Settled",
-		body: "The funds sit in the merchant's own shielded wallet. The server only holds a viewing key: it can see payments, it can never move them.",
+		body: "The funds sit in the merchant's own shielded wallet. The server only holds a viewing key: it can see payments, but it can never move them.",
 	},
 ] as const;
 
@@ -62,7 +62,7 @@ export function HowItWorks() {
 					</p>
 					<h2 className="text-4xl font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl lg:col-span-9">
 						One payment, start to finish.
-						<span className="block text-kertas/45">
+						<span className="block text-kertas/50">
 							Five stages, nothing public.
 						</span>
 					</h2>
@@ -90,7 +90,7 @@ export function HowItWorks() {
 										{s.body}
 									</p>
 									{"note" in s && (
-										<p className="mt-4 max-w-md font-mono text-xs leading-relaxed text-kertas/55">
+										<p className="mt-4 max-w-md font-mono text-xs leading-relaxed text-kertas/60">
 											{s.note}
 										</p>
 									)}
@@ -150,7 +150,7 @@ function Screen({
 }) {
 	return (
 		<div
-			className={`min-h-[26rem] overflow-hidden rounded-[1.75rem] border border-white/12 bg-malam-2 p-6 sm:p-8 ${className}`}
+			className={`overflow-hidden rounded-[1.75rem] border border-white/12 bg-malam-2 p-6 sm:p-8 ${className}`}
 		>
 			{children}
 		</div>
@@ -175,7 +175,7 @@ function Visual({ i, on }: { i: number; on: boolean }) {
 }
 
 const label =
-	"font-mono text-[11px] uppercase tracking-[0.18em] text-kertas/50";
+	"font-mono text-[11px] uppercase tracking-[0.18em] text-kertas/60";
 const ADDR = "u1x9ph4w0kq7e3lzd52uv8cmt6rjy0ns4fa9gk2hw7pe3vq5m8c";
 
 function InvoiceV({ on }: { on: boolean }) {
@@ -208,7 +208,7 @@ function InvoiceV({ on }: { on: boolean }) {
 					<Scramble text={ADDR} on={on} />
 				</p>
 			</div>
-			<ul className="space-y-1.5 font-mono text-xs text-kertas/40">
+			<ul className="space-y-1.5 font-mono text-xs text-kertas/55">
 				<li className="seq-fade" style={t(900)}>
 					#0042 u1m3tz8vr…k0q2 · used once
 				</li>
@@ -443,7 +443,7 @@ function LunasV() {
 			<div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
 				<div className="seq-grow h-full origin-left bg-lunas" style={t(100)} />
 			</div>
-			<div className="flex flex-1 items-center justify-center py-10">
+			<div className="flex flex-1 items-center justify-center py-8 sm:py-10">
 				<p
 					className="seq-stamp text-7xl font-extrabold tracking-tight text-lunas sm:text-8xl"
 					style={{ ...t(1100), transform: "rotate(-7deg)" }}
