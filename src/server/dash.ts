@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import {
@@ -6,7 +7,12 @@ import {
 	setCookie,
 } from "@tanstack/react-start/server";
 
-const COOKIE = "lunaz_session";
+// __Host- needs Secure + Path=/ + no Domain, so it is production (TLS) only.
+// Sessions under the old name are not read: users sign in again once.
+const PROD = process.env.NODE_ENV === "production";
+const COOKIE = PROD ? "__Host-lunaz_session" : "lunaz_session";
+// Keep equal to the core-service session lifetime
+const SESSION_SECS = 60 * 60 * 24 * 7;
 const base = () => process.env.LUNAZ_API_URL ?? "http://127.0.0.1:8097";
 
 export type Account = {
@@ -69,12 +75,15 @@ async function call(
 		throw new ApiError("Cannot reach the Lunaz API. Try again shortly.", 502);
 	}
 	const text = await res.text();
-	const data = text ? JSON.parse(text) : null;
+	let data: { error?: unknown } | null = null;
+	try {
+		data = text ? JSON.parse(text) : null;
+	} catch {
+		throw new ApiError("Unexpected response from the Lunaz API.", 502);
+	}
 	if (!res.ok) {
-		throw new ApiError(
-			data?.error ?? `Request failed (${res.status})`,
-			res.status,
-		);
+		const msg = typeof data?.error === "string" ? data.error : "";
+		throw new ApiError(msg || `Request failed (${res.status})`, res.status);
 	}
 	return data;
 }
@@ -103,9 +112,9 @@ function startSession(token: string) {
 	setCookie(COOKIE, token, {
 		httpOnly: true,
 		sameSite: "lax",
-		secure: process.env.NODE_ENV === "production",
+		secure: PROD,
 		path: "/",
-		maxAge: 60 * 60 * 24 * 7,
+		maxAge: SESSION_SECS,
 	});
 }
 
@@ -114,6 +123,32 @@ type In = Record<string, unknown>;
 const input = (d: unknown) => (d ?? {}) as In;
 
 const NOT_CONFIGURED = "Sign-in is not configured. Contact support.";
+const SIGN_IN_FAILED = "Sign-in failed. Try again.";
+
+type MagicAdmin = Awaited<
+	ReturnType<typeof import("@magic-sdk/admin")["Magic"]["init"]>
+>;
+let magicAdmin: MagicAdmin | undefined;
+async function getMagicAdmin(secret: string) {
+	if (!magicAdmin) {
+		const { Magic } = await import("@magic-sdk/admin");
+		const m = await Magic.init(secret);
+		if (!m.clientId) throw new ApiError(NOT_CONFIGURED, 503);
+		magicAdmin = m;
+	}
+	return magicAdmin;
+}
+
+// Replay guard: a DID token is single-use for 20 minutes after a successful exchange
+// ponytail: in-memory, per process; use a shared store (Redis) when running several replicas
+const REPLAY_MS = 20 * 60 * 1000;
+const used = new Map<string, number>();
+const fingerprint = (t: string) => createHash("sha256").update(t).digest("hex");
+const seen = (h: string) => {
+	const now = Date.now();
+	for (const [k, exp] of used) if (exp <= now) used.delete(k);
+	return used.has(h);
+};
 
 // Magic only proves the email; the Lunaz session comes from core-service
 export const signInWithMagic = createServerFn({ method: "POST" })
@@ -128,16 +163,23 @@ export const signInWithMagic = createServerFn({ method: "POST" })
 			);
 			throw new ApiError(NOT_CONFIGURED, 503);
 		}
-		if (!didToken) throw new ApiError("Sign-in failed. Try again.", 400);
-		const { Magic } = await import("@magic-sdk/admin");
-		const magic = await Magic.init(secret);
+		if (!didToken) throw new ApiError(SIGN_IN_FAILED, 400);
+		const hash = fingerprint(didToken);
+		if (seen(hash)) throw new ApiError(SIGN_IN_FAILED, 401);
+		let magic: MagicAdmin;
+		try {
+			magic = await getMagicAdmin(secret);
+		} catch (e) {
+			console.error("signInWithMagic: magic init failed", e);
+			throw e instanceof ApiError ? e : new ApiError(SIGN_IN_FAILED, 502);
+		}
 		let email: string | null | undefined;
 		try {
 			magic.token.validate(didToken);
 			email = (await magic.users.getMetadataByToken(didToken)).email;
 		} catch (e) {
 			console.error("signInWithMagic: magic verification failed", e);
-			throw new ApiError("Sign-in failed. Try again.", 401);
+			throw new ApiError(SIGN_IN_FAILED, 401);
 		}
 		if (!email) throw new ApiError("No email found for this sign-in.", 400);
 		let r: { token: string; new_account: boolean; merchant_id: string };
@@ -161,6 +203,7 @@ export const signInWithMagic = createServerFn({ method: "POST" })
 			}
 			throw e;
 		}
+		used.set(hash, Date.now() + REPLAY_MS);
 		startSession(r.token);
 		await magic.users.logoutByToken(didToken).catch(() => {});
 		return { ok: true, new_account: r.new_account };
@@ -249,7 +292,9 @@ export const createKey = createServerFn({ method: "POST" })
 		if (res.status === 401) throw expired();
 		if (!res.ok)
 			throw new ApiError(
-				body?.error ?? `Request failed (${res.status})`,
+				typeof body?.error === "string"
+					? body.error
+					: `Request failed (${res.status})`,
 				res.status,
 			);
 		return body as NewKeyRes;
@@ -265,12 +310,19 @@ export const revokeKey = createServerFn({ method: "POST" })
 		return { ok: true };
 	});
 
-export const getWebhook = createServerFn({ method: "GET" }).handler(
-	async () =>
-		(await authed("/v1/account/webhook")) as {
-			url: string | null;
-			secret: string;
-		},
+// The secret never rides along with page loads: it is fetched on demand
+export const getWebhookUrl = createServerFn({ method: "GET" }).handler(
+	async () => {
+		const w = (await authed("/v1/account/webhook")) as { url: string | null };
+		return { url: w.url ?? null };
+	},
+);
+
+export const revealWebhookSecret = createServerFn({ method: "POST" }).handler(
+	async () => ({
+		secret: ((await authed("/v1/account/webhook")) as { secret: string })
+			.secret,
+	}),
 );
 
 export const saveWebhook = createServerFn({ method: "POST" })
@@ -388,7 +440,8 @@ export const exportCsv = createServerFn({ method: "POST" })
 			if (res.status === 401) throw expired();
 			let msg = `Export failed (${res.status})`;
 			try {
-				msg = JSON.parse(text).error ?? msg;
+				const e = JSON.parse(text).error;
+				if (typeof e === "string") msg = e;
 			} catch {}
 			throw new ApiError(msg, res.status);
 		}
