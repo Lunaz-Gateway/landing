@@ -656,13 +656,15 @@ function PayStep({
 						label="Copy payment URI"
 					/>
 				</div>
-				<a
-					href={co.invoice.zip321_uri}
-					className={`${button("primary")} w-full`}
-				>
-					Open in wallet
-					<Icon name="external" className="size-3.5" />
-				</a>
+				{co.invoice.zip321_uri.startsWith("zcash:") && (
+					<a
+						href={co.invoice.zip321_uri}
+						className={`${button("primary")} w-full`}
+					>
+						Open in wallet
+						<Icon name="external" className="size-3.5" />
+					</a>
+				)}
 			</div>
 
 			{dead ? (
