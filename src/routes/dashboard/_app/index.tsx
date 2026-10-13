@@ -2,18 +2,19 @@ import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { Overview } from "#/components/dash-overview";
 import { PageSkeleton, TableSkeleton } from "#/components/dash-sections";
 import { PageError, Skeleton } from "#/components/dash-ui";
-import { getWebhook, listInvoices, listKeys } from "#/server/dash";
+import { getPlan, getWebhook, listInvoices, listKeys } from "#/server/dash";
 
 const useAccount = () => getRouteApi("/dashboard/_app").useLoaderData();
 
 export const Route = createFileRoute("/dashboard/_app/")({
 	loader: async () => {
-		const [keys, invoices, webhook] = await Promise.all([
+		const [keys, invoices, webhook, plan] = await Promise.all([
 			listKeys(),
 			listInvoices(),
 			getWebhook(),
+			getPlan().catch(() => null),
 		]);
-		return { keys, invoices, webhook };
+		return { keys, invoices, webhook, plan };
 	},
 	head: () => ({ meta: [{ title: "Overview · Lunaz Dashboard" }] }),
 	pendingMs: 150,

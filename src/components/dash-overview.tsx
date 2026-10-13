@@ -7,11 +7,13 @@ import {
 } from "#/lib/wallet-gen";
 import {
 	type Account,
+	type AccountPlan,
 	type ApiKey,
 	type Invoice,
 	setUfvk,
 	testWebhook,
 } from "#/server/dash";
+import { UsageStrip } from "./dash-billing";
 import {
 	Code,
 	CreateKeyForm,
@@ -47,6 +49,7 @@ type Props = {
 	keys: ApiKey[];
 	invoices: Invoice[];
 	webhook: { url: string | null };
+	plan: AccountPlan | null;
 };
 
 type Step = {
@@ -59,7 +62,7 @@ type Step = {
 
 const REQUIRED = 4;
 
-export function Overview({ account, keys, invoices, webhook }: Props) {
+export function Overview({ account, keys, invoices, webhook, plan }: Props) {
 	const active = keys.filter((k) => !k.revoked_at);
 	const steps: Step[] = [
 		{
@@ -235,6 +238,7 @@ export function Overview({ account, keys, invoices, webhook }: Props) {
 				description={`Welcome back, ${account.name}.`}
 			/>
 			<div className="space-y-6">
+				{plan && <UsageStrip plan={plan} />}
 				<Stats invoices={invoices} />
 				<div className="grid gap-6 lg:grid-cols-3 lg:items-start">
 					<RecentInvoices invoices={invoices} />

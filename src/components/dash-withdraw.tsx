@@ -142,7 +142,7 @@ const mmss = (s: number) => {
 	return `${Math.floor(v / 60)}:${String(v % 60).padStart(2, "0")}`;
 };
 
-function Countdown({ to, prefix }: { to: number; prefix: string }) {
+export function Countdown({ to, prefix }: { to: number; prefix: string }) {
 	const now = useNow(true);
 	const left = to - now;
 	return (

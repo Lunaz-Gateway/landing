@@ -8,6 +8,7 @@ import {
 	useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { planLabel } from "#/components/dash-sections";
 import {
 	Badge,
 	button,
@@ -41,6 +42,7 @@ const NAV: { to: string; label: string; icon: IconName }[] = [
 	{ to: "/dashboard/withdraw", label: "Withdraw", icon: "bank" },
 	{ to: "/dashboard/keys", label: "API keys", icon: "key" },
 	{ to: "/dashboard/webhooks", label: "Webhooks", icon: "hook" },
+	{ to: "/dashboard/billing", label: "Plan & billing", icon: "card" },
 	{ to: "/dashboard/settings", label: "Settings", icon: "settings" },
 ];
 
@@ -68,7 +70,20 @@ function Sidebar({ account }: { account: Account }) {
 				</Link>
 			</div>
 			<div className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5">
-				<p className="truncate text-sm font-bold">{account.name}</p>
+				<div className="flex items-center justify-between gap-2">
+					<p className="truncate text-sm font-bold">{account.name}</p>
+					{account.plan && (
+						<Link
+							to="/dashboard/billing"
+							className="dash-focus shrink-0 rounded-md"
+							aria-label={`${planLabel(account.plan)} plan`}
+						>
+							<Badge tone={account.plan === "free" ? "muted" : "success"}>
+								{planLabel(account.plan)}
+							</Badge>
+						</Link>
+					)}
+				</div>
 				<div className="mt-1.5">
 					<Badge tone={account.network === "main" ? "success" : "neutral"}>
 						{account.network === "main" ? "Mainnet" : "Testnet"}
