@@ -1,5 +1,6 @@
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
+import { TestnetBanner } from "#/components/TestnetBanner";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -103,6 +104,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body>
+				<TestnetBanner name="Lunaz" />
 				{children}
 				<Scripts />
 			</body>

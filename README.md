@@ -39,6 +39,8 @@ browser --> TanStack Start server functions (src/server/dash.ts) --> core-servic
 | `VITE_DEMO_URL` | public, build time | URL of the demo app behind "Try the demo" (default `http://localhost:3000`) |
 | `VITE_SALES_EMAIL` | public, build time | Address behind the Enterprise "Contact us" button (default `sales@lunaz.example`) |
 | `VITE_DOCS_URL` | public, build time | URL of the documentation site behind "Docs" (default `http://localhost:4321`) |
+| `VITE_TESTNET` | public, build time | `1` shows the testnet banner (and the cross-chain "mainnet only" note); empty for mainnet |
+| `VITE_MAINNET_URL` | public, build time | Mainnet site linked from the testnet banner (default `https://lunaz.alwaysbedream.dev`) |
 
 `VITE_*` values are baked into the client bundle at build time and are public. Do not put secrets there.
 
@@ -106,7 +108,7 @@ The session cookie is `HttpOnly`, `SameSite=Lax`, 7 days, and named `__Host-luna
 - Serve it over HTTPS. The session cookie is `Secure` in production, so login does not work over plain HTTP (except on `localhost` in most browsers).
 - Put a TLS reverse proxy (Caddy, nginx, Traefik) in front and publish the container on `127.0.0.1` only.
 - The container must reach core-service at `LUNAZ_API_URL`. That URL is internal and is never sent to the browser.
-- Changing `VITE_DEMO_URL`, `VITE_DOCS_URL`, `VITE_SALES_EMAIL` or `VITE_MAGIC_PUBLISHABLE_KEY` requires a rebuild. `MAGIC_SECRET_KEY` and `LUNAZ_INTERNAL_TOKEN` are runtime env only; never pass them as build args.
+- Changing `VITE_TESTNET`, `VITE_MAINNET_URL`, `VITE_DEMO_URL`, `VITE_DOCS_URL`, `VITE_SALES_EMAIL` or `VITE_MAGIC_PUBLISHABLE_KEY` requires a rebuild. `MAGIC_SECRET_KEY` and `LUNAZ_INTERNAL_TOKEN` are runtime env only; never pass them as build args.
 - Add the site origin to the allowed domains in the Magic dashboard.
 - `LUNAZ_API_URL` is the core-service base without `/v1`, for example `https://example.com/api` (prefix stripped by the proxy) or `http://<core-service container>:8080` on a shared Docker network.
 - `LUNAZ_INTERNAL_TOKEN` must be identical on landing and core-service.

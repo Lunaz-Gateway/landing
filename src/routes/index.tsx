@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { GatewayFlow } from "#/components/gateway-flow";
 import { HowItWorks } from "#/components/how-it-works";
+import { TESTNET } from "#/components/TestnetBanner";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -102,7 +103,7 @@ function Arrow() {
 function Nav() {
 	const link = "text-kertas/70 transition-colors hover:text-kertas";
 	return (
-		<header className="sticky top-0 z-40 border-b border-white/8 bg-malam/85 backdrop-blur-md">
+		<header className="sticky top-[var(--tb,0px)] z-40 border-b border-white/8 bg-malam/85 backdrop-blur-md">
 			<div className={`${wrap} flex h-16 items-center justify-between gap-4`}>
 				<a href="/" aria-label="Lunaz home" className="shrink-0">
 					<img
@@ -158,8 +159,9 @@ function Hero() {
 					</h1>
 					<p className="mt-8 max-w-[31rem] text-lg leading-relaxed text-kertas/80">
 						A non-custodial payment gateway for shielded Zcash. Buyers pay in
-						ZEC, or in USDC, SOL, ETH or BTC through NEAR Intents. Every
-						merchant is paid straight to its own shielded wallet.
+						ZEC, or in USDC, SOL, ETH or BTC through NEAR Intents.
+						{TESTNET && " (mainnet only on this testnet site)."} Every merchant
+						is paid straight to its own shielded wallet.
 					</p>
 					<div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
 						<DemoButton />

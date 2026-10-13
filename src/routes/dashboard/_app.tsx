@@ -163,7 +163,7 @@ function Shell() {
 			>
 				Skip to content
 			</a>
-			<aside className="fixed inset-y-0 left-0 hidden w-60 border-r border-white/[0.08] bg-[#181a35] md:block">
+			<aside className="fixed top-[var(--tb,0px)] bottom-0 left-0 hidden w-60 border-r border-white/[0.08] bg-[#181a35] md:block">
 				<Sidebar account={account} />
 			</aside>
 			<Dialog
@@ -179,7 +179,7 @@ function Shell() {
 				<Sidebar account={account} />
 			</Dialog>
 			<div className="flex min-h-dvh min-w-0 flex-col">
-				<header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-white/[0.08] bg-malam/85 px-4 backdrop-blur-md sm:px-6">
+				<header className="sticky top-[var(--tb,0px)] z-30 flex h-14 items-center gap-2 border-b border-white/[0.08] bg-malam/85 px-4 backdrop-blur-md sm:px-6">
 					<button
 						type="button"
 						className={`${button("ghost", "icon")} -ml-1.5 md:hidden`}
