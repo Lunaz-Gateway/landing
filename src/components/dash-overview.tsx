@@ -1,6 +1,10 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { type GeneratedWallet, generateWallet } from "#/lib/wallet-gen";
+import {
+	type GeneratedWallet,
+	generateWallet,
+	walletGenReady,
+} from "#/lib/wallet-gen";
 import {
 	type Account,
 	type ApiKey,
@@ -18,6 +22,7 @@ import {
 } from "./dash-sections";
 import {
 	Amount,
+	Badge,
 	Button,
 	button,
 	Card,
@@ -70,7 +75,7 @@ export function Overview({ account, keys, invoices, webhook }: Props) {
 		},
 		{
 			title: "Create an API key",
-			desc: "Your server uses it to create invoices.",
+			desc: "Your backend, or the marketplace you sell on, uses it to create invoices.",
 			done: active.length > 0,
 			body: <KeyStep />,
 		},
@@ -97,6 +102,7 @@ export function Overview({ account, keys, invoices, webhook }: Props) {
 	const onboarded = account.ufvk_set && active.length > 0;
 	const [showSteps, setShowSteps] = useState(false);
 	const expanded = !onboarded || showSteps;
+	const complete = doneCount === REQUIRED;
 
 	// Move focus to the new current step after it changes, not on first render
 	const heads = useRef<(HTMLHeadingElement | null)[]>([]);
@@ -120,8 +126,9 @@ export function Overview({ account, keys, invoices, webhook }: Props) {
 					>
 						Getting started
 					</h2>
-					<p className="mt-0.5 text-sm text-kertas/65 tabular-nums">
-						{doneCount} of {REQUIRED} done
+					<p className="mt-0.5 flex items-center gap-1.5 text-sm text-kertas/65 tabular-nums">
+						{complete && <Icon name="check" className="size-4 text-lunas" />}
+						{complete ? "Setup complete" : `${doneCount} of ${REQUIRED} done`}
 						{onboarded && !webhook.url && " · webhook optional"}
 					</p>
 				</div>
@@ -137,6 +144,7 @@ export function Overview({ account, keys, invoices, webhook }: Props) {
 				)}
 			</div>
 			<div
+				hidden={complete && !expanded}
 				className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10"
 				role="progressbar"
 				aria-label="Getting started progress"
@@ -153,7 +161,7 @@ export function Overview({ account, keys, invoices, webhook }: Props) {
 				<ol id="gs-steps" className="mt-6">
 					{steps.map((s, i) => {
 						const isCurrent = i === current;
-						const future = current >= 0 && i > current;
+						const future = current >= 0 && i > current && !s.done;
 						return (
 							<li
 								key={s.title}
@@ -198,7 +206,9 @@ export function Overview({ account, keys, invoices, webhook }: Props) {
 									</h3>
 									<p className="text-sm text-kertas/65">{s.desc}</p>
 								</div>
-								{isCurrent && s.body && <div className="mt-4">{s.body}</div>}
+								{isCurrent && s.body && (
+									<div className="mt-4 -ml-12 sm:ml-0">{s.body}</div>
+								)}
 							</li>
 						);
 					})}
@@ -226,7 +236,7 @@ export function Overview({ account, keys, invoices, webhook }: Props) {
 			/>
 			<div className="space-y-6">
 				<Stats invoices={invoices} />
-				<div className="grid gap-6 lg:grid-cols-3">
+				<div className="grid gap-6 lg:grid-cols-3 lg:items-start">
 					<RecentInvoices invoices={invoices} />
 					<QuickActions hasWebhook={!!webhook.url} />
 				</div>
@@ -259,10 +269,10 @@ function Stats({ invoices }: { invoices: Invoice[] }) {
 			value: (
 				<>
 					{zec(received)}{" "}
-					<span className="text-base font-medium text-kertas/50">ZEC</span>
+					<span className="text-base font-medium text-kertas/60">ZEC</span>
 				</>
 			),
-			hint: "Across all statuses",
+			hint: "Total across all invoices",
 		},
 		{ label: "Awaiting payment", value: pending, hint: "Pending or detected" },
 		...(underpaid > 0
@@ -295,7 +305,7 @@ function Stats({ invoices }: { invoices: Invoice[] }) {
 						<dd className="mt-2 text-2xl font-bold tracking-[-0.02em] tabular-nums sm:text-[28px]">
 							{s.value}
 						</dd>
-						<dd className="mt-1 text-xs text-kertas/50">{s.hint}</dd>
+						<dd className="mt-1 text-xs text-kertas/60">{s.hint}</dd>
 					</div>
 				))}
 			</dl>
@@ -446,7 +456,9 @@ function InvoiceStep({ prefix }: { prefix?: string }) {
 				Set <code className="font-mono">$LUNAZ</code> to the API URL and replace
 				the key with your full API key.
 			</p>
-			<Code copy="Copy command">{cmd}</Code>
+			<Code copy="Copy command" lang="Terminal">
+				{cmd}
+			</Code>
 			<Button
 				pending={busy}
 				onClick={async () => {
@@ -462,20 +474,22 @@ function InvoiceStep({ prefix }: { prefix?: string }) {
 }
 
 const radioCard =
-	"flex cursor-pointer gap-3 rounded-xl border border-white/15 bg-malam p-4 hover:border-white/30 has-[:checked]:border-lunas has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-lunas has-[:focus-visible]:outline-offset-2";
+	"flex cursor-pointer gap-3 rounded-xl border border-white/15 bg-malam p-4 hover:border-white/30 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60 has-[:disabled]:hover:border-white/15 has-[:checked]:border-lunas has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-lunas has-[:focus-visible]:outline-offset-2";
 
 function WalletStep({ network }: { network: Account["network"] }) {
-	const [mode, setMode] = useState<"gen" | "own" | null>(null);
+	const [mode, setMode] = useState<"gen" | "own" | null>(
+		walletGenReady ? null : "own",
+	);
 	const options = [
-		[
-			"gen",
-			"Generate a new wallet",
-			"Lunaz creates a new wallet in your browser. You get a 24-word recovery phrase to import into ZODL; only the viewing key is sent to Lunaz.",
-		],
 		[
 			"own",
 			"Use my own viewing key",
 			"Paste the Unified Full Viewing Key of a wallet you already have.",
+		],
+		[
+			"gen",
+			"Generate a new wallet",
+			"Lunaz creates a new wallet in your browser. You get a 24-word recovery phrase to import into ZODL; only the viewing key is sent to Lunaz.",
 		],
 	] as const;
 	return (
@@ -492,11 +506,17 @@ function WalletStep({ network }: { network: Account["network"] }) {
 								name="wallet-mode"
 								value={v}
 								checked={mode === v}
+								disabled={v === "gen" && !walletGenReady}
 								onChange={() => setMode(v)}
 								className="mt-1 size-4 shrink-0 accent-[#c8f169]"
 							/>
 							<span>
-								<span className="block font-bold">{t}</span>
+								<span className="flex flex-wrap items-center gap-2 font-bold">
+									{t}
+									{v === "gen" && !walletGenReady && (
+										<Badge tone="muted">Coming soon</Badge>
+									)}
+								</span>
 								<span className="mt-1 block text-sm text-kertas/70">{d}</span>
 							</span>
 						</label>
