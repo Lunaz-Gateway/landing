@@ -107,7 +107,8 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "danger-soft";
 type Size = "sm" | "md" | "lg" | "icon";
 
 const VARIANTS: Record<Variant, string> = {
-	primary: "bg-lunas text-malam font-bold hover:bg-[#d3f584]",
+	primary:
+		"bg-lunas text-malam font-bold hover:bg-[#d3f584] [&:disabled:not([aria-busy])]:bg-white/[0.08] [&:disabled:not([aria-busy])]:text-kertas/70 [&:disabled:not([aria-busy])]:opacity-100",
 	secondary:
 		"border border-white/15 bg-white/[0.04] text-kertas font-medium hover:border-white/25 hover:bg-white/[0.08]",
 	ghost: "text-kertas/75 font-medium hover:bg-white/[0.07] hover:text-kertas",
@@ -708,7 +709,7 @@ export function Toaster() {
 						type="button"
 						aria-label="Dismiss"
 						onClick={() => dismissToast(t.id)}
-						className="dash-focus -my-1 grid size-7 place-items-center rounded-md text-kertas/50 hover:bg-white/[0.07] hover:text-kertas"
+						className="dash-focus -my-1 grid size-7 place-items-center rounded-md text-kertas/60 hover:bg-white/[0.07] hover:text-kertas"
 					>
 						<Icon name="x" className="size-3.5" />
 					</button>
@@ -790,7 +791,7 @@ export function CopyButton({
 				type="button"
 				onClick={onClick}
 				aria-label={label}
-				className="dash-focus inline-grid size-6 shrink-0 place-items-center rounded-md text-kertas/50 transition-colors hover:bg-white/[0.08] hover:text-kertas"
+				className="dash-focus inline-grid size-6 shrink-0 place-items-center rounded-md text-kertas/60 transition-colors hover:bg-white/[0.08] hover:text-kertas"
 			>
 				<Icon name={done ? "check" : "copy"} className="size-3.5" />
 			</button>
@@ -845,8 +846,8 @@ export const zec = (z: number) =>
 
 export function Amount({ zat, muted }: { zat: number; muted?: boolean }) {
 	return (
-		<span className={`tabular-nums ${muted ? "text-kertas/45" : ""}`}>
-			{zec(zat)} <span className="text-kertas/45">ZEC</span>
+		<span className={`tabular-nums ${muted ? "text-kertas/55" : ""}`}>
+			{zec(zat)} <span className="text-kertas/55">ZEC</span>
 		</span>
 	);
 }
@@ -916,7 +917,7 @@ export function Time({
 }) {
 	const hydrated = useHydrated();
 	useTick();
-	if (!s) return <span className="text-kertas/45">{empty}</span>;
+	if (!s) return <span className="text-kertas/55">{empty}</span>;
 	const iso = new Date(s * 1000).toISOString();
 	if (absoluteOnly)
 		return (
@@ -990,7 +991,7 @@ export function AuthCard({
 						Back to site
 					</a>
 				</div>
-				<div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
+				<div className="mx-auto flex w-full max-w-sm flex-1 flex-col pt-14 pb-10 sm:justify-center sm:py-10">
 					<h1 className="text-2xl font-bold tracking-[-0.02em]">{title}</h1>
 					<p className="mt-1.5 mb-7 text-sm text-kertas/65">{subtitle}</p>
 					{notice}

@@ -58,7 +58,7 @@ function Signup() {
 					label="Name"
 					id="name"
 					autoComplete="name"
-					hint="Your business or project name."
+					hint="Your shop, business or project name."
 					required
 				/>
 				<Input

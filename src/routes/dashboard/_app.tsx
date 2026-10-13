@@ -114,7 +114,7 @@ function Sidebar({ account }: { account: Account }) {
 					Sign out
 				</button>
 				<p
-					className="truncate px-2.5 pt-1 text-xs text-kertas/50"
+					className="truncate px-2.5 pt-1 text-xs text-kertas/60"
 					title={account.email}
 				>
 					{account.email}

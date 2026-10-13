@@ -44,13 +44,19 @@ export const curlFor = (key = "lz_...") => `curl -X POST $LUNAZ/v1/invoices \\
   -H "Content-Type: application/json" \\
   -d '{"amount_zat":10000}'`;
 
-export function Code({ children, copy }: { children: string; copy?: string }) {
+export function Code({
+	children,
+	copy,
+	lang,
+}: {
+	children: string;
+	copy?: string;
+	lang?: string;
+}) {
 	return (
-		<div className="relative">
-			<pre className="overflow-x-auto rounded-lg border border-white/[0.08] bg-[#171a36] p-4 pr-12 font-mono text-xs leading-relaxed text-kertas/90">
-				{children}
-			</pre>
-			<div className="absolute top-2 right-2">
+		<div className="overflow-hidden rounded-lg border border-white/[0.08] bg-[#171a36]">
+			<div className="flex items-center justify-between border-b border-white/[0.06] py-1 pr-2 pl-4">
+				<span className="text-xs text-kertas/60">{lang}</span>
 				<CopyButton
 					text={children}
 					label={copy ?? "Copy code"}
@@ -58,6 +64,9 @@ export function Code({ children, copy }: { children: string; copy?: string }) {
 					iconOnly
 				/>
 			</div>
+			<pre className="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-kertas/90">
+				{children}
+			</pre>
 		</div>
 	);
 }
@@ -164,7 +173,7 @@ export function CreateKeyForm({
 	const { run, busy } = useAction();
 	return (
 		<form
-			className="flex flex-wrap items-end gap-3"
+			className="flex max-w-xl flex-wrap items-end gap-3"
 			onSubmit={async (e) => {
 				e.preventDefault();
 				const k = await run("create", () => createKey({ data: { name } }));
@@ -190,7 +199,7 @@ export function CreateKeyForm({
 				variant="primary"
 				icon="plus"
 				pending={busy === "create"}
-				className="mb-[22px]"
+				className="sm:mb-[22px]"
 			>
 				Create key
 			</Button>
@@ -214,7 +223,8 @@ export function KeyRevealDialog({
 				<>
 					This is the only time the full key for{" "}
 					<span className="font-medium text-kertas">{created?.name}</span> is
-					shown. Store it in your server's secrets.
+					shown. Store it as a secret on your server or with the marketplace you
+					sell on.
 				</>
 			}
 			initialFocus="[data-copy] button"
@@ -256,7 +266,7 @@ export function ApiKeys({ keys }: { keys: ApiKey[] }) {
 		<>
 			<PageHeader
 				title="API keys"
-				description="Your server uses these keys to create invoices. Keep them secret."
+				description="Your backend, or the marketplace you sell on, uses these keys to create invoices. Keep them secret."
 			/>
 			<div className="space-y-6">
 				<Card
@@ -293,7 +303,10 @@ export function ApiKeys({ keys }: { keys: ApiKey[] }) {
 							}
 						>
 							{sorted.map((k) => (
-								<tr key={k.id} className={k.revoked_at ? "opacity-60" : ""}>
+								<tr
+									key={k.id}
+									className={`sm:h-14 ${k.revoked_at ? "opacity-60" : ""}`}
+								>
 									<td className={`${td} font-medium`} data-label="Name">
 										{k.name}
 									</td>
@@ -318,7 +331,12 @@ export function ApiKeys({ keys }: { keys: ApiKey[] }) {
 											</Badge>
 										)}
 									</td>
-									<td className={`${td} text-right`} data-end>
+									<td
+										className={`${td} self-end text-right`}
+										data-end
+										data-sm-end
+										data-sm-hide={k.revoked_at ? true : undefined}
+									>
 										{!k.revoked_at && (
 											<Button
 												variant="danger-soft"
@@ -377,6 +395,12 @@ function verify(rawBody, signature, secret) {
 // verify(raw, req.headers["x-lunaz-signature"], process.env.LUNAZ_WEBHOOK_SECRET)`;
 
 const okCode = (c: number | null) => c !== null && c >= 200 && c < 300;
+
+// Raw HTTP client errors read as noise; the full text stays in the tooltip
+const deliveryError = (e: string) =>
+	/error sending request|connect|dns|timed? ?out/i.test(e)
+		? "Couldn't reach your endpoint"
+		: e;
 
 export function Webhooks({
 	webhook,
@@ -547,18 +571,22 @@ export function Webhooks({
 							{deliveries.map((d) => (
 								<tr key={d.id}>
 									<td className={`${td} font-mono text-[13px]`}>{d.type}</td>
-									<td className={td} data-sm-end>
+									<td
+										className={td}
+										data-sm-end={okCode(d.status_code) || undefined}
+										data-wide={!okCode(d.status_code) || undefined}
+									>
 										{okCode(d.status_code) ? (
 											<Badge tone="success">{d.status_code} OK</Badge>
 										) : (
-											<span className="inline-flex max-w-64 items-center gap-2">
+											<span className="inline-flex max-w-full items-center gap-2 sm:max-w-64">
 												<Badge tone="danger">{d.status_code ?? "Failed"}</Badge>
 												{d.error && (
 													<span
 														className="truncate text-xs text-kertas/60"
 														title={d.error}
 													>
-														{d.error}
+														{deliveryError(d.error)}
 													</span>
 												)}
 											</span>
@@ -578,7 +606,7 @@ export function Webhooks({
 												{d.invoice_id.slice(0, 8)}
 											</Link>
 										) : (
-											<span className="text-kertas/45">—</span>
+											<span className="text-kertas/55">—</span>
 										)}
 									</td>
 									<td className={`${td} tabular-nums`} data-label="Attempt">
@@ -608,7 +636,7 @@ export function Webhooks({
 						</>
 					}
 				>
-					<Code>{SNIPPET}</Code>
+					<Code lang="Node.js">{SNIPPET}</Code>
 				</Card>
 			</div>
 
@@ -824,7 +852,7 @@ function InvoiceDrawer({
 								<p className="text-xs text-kertas/55">Amount</p>
 								<p className="mt-0.5 text-2xl font-bold tracking-[-0.02em] tabular-nums">
 									{zec(i.amount_zat)}{" "}
-									<span className="text-base font-medium text-kertas/50">
+									<span className="text-base font-medium text-kertas/60">
 										ZEC
 									</span>
 								</p>
@@ -872,7 +900,7 @@ function InvoiceDrawer({
 										)}
 									</div>
 								) : (
-									<span className="text-kertas/45">Not paid yet</span>
+									<span className="text-kertas/55">Not paid yet</span>
 								)}
 							</Row>
 						</dl>
@@ -1018,7 +1046,9 @@ export function Invoices({
 					>
 						Create invoices from your server with an API key:
 						<div className="mt-3 text-left">
-							<Code copy="Copy command">{curlFor()}</Code>
+							<Code copy="Copy command" lang="Terminal">
+								{curlFor()}
+							</Code>
 						</div>
 					</EmptyState>
 				</Card>
@@ -1049,7 +1079,7 @@ export function Invoices({
 										className="sr-only"
 									/>
 									{f}
-									<span className="text-xs text-kertas/45 tabular-nums">
+									<span className="text-xs text-kertas/55 tabular-nums">
 										{counts[f] ?? 0}
 									</span>
 								</label>
@@ -1143,7 +1173,7 @@ export function Invoices({
 										{i.txid ? (
 											<Mono value={i.txid} label="Copy txid" />
 										) : (
-											<span className="text-kertas/45">—</span>
+											<span className="text-kertas/55">—</span>
 										)}
 									</td>
 									<td
