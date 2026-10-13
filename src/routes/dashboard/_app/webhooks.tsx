@@ -5,15 +5,15 @@ import {
 	Webhooks,
 } from "#/components/dash-sections";
 import { PageError, Skeleton } from "#/components/dash-ui";
-import { getWebhook, listDeliveries } from "#/server/dash";
+import { getWebhook, listWebhookEvents } from "#/server/dash";
 
 export const Route = createFileRoute("/dashboard/_app/webhooks")({
 	loader: async () => {
-		const [webhook, deliveries] = await Promise.all([
+		const [webhook, events] = await Promise.all([
 			getWebhook(),
-			listDeliveries(),
+			listWebhookEvents(),
 		]);
-		return { webhook, deliveries };
+		return { webhook, events };
 	},
 	head: () => ({ meta: [{ title: "Webhooks · Lunaz Dashboard" }] }),
 	pendingMs: 150,

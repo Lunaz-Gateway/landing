@@ -321,20 +321,48 @@ export const getInvoice = createServerFn({ method: "GET" })
 		return { zip321_uri: d.zip321_uri, swap: d.swap };
 	});
 
-export type Delivery = {
+export type WebhookEvent = {
 	id: string;
-	invoice_id: string | null;
 	type: string;
-	url: string;
-	status_code: number | null;
-	error: string | null;
-	attempt: number;
+	invoice_id: string | null;
+	status: "pending" | "delivered" | "failed";
+	attempts: number;
+	max_attempts: number;
+	next_attempt_at: number | null;
+	last_status_code: number | null;
+	last_error: string | null;
 	created_at: number;
+	updated_at: number;
+	deliveries: {
+		attempt: number;
+		status_code: number | null;
+		error: string | null;
+		created_at: number;
+	}[];
 };
 
-export const listDeliveries = createServerFn({ method: "GET" }).handler(
+export const listWebhookEvents = createServerFn({ method: "GET" }).handler(
 	async () =>
-		(await authed("/v1/account/webhook/deliveries?limit=50")) as Delivery[],
+		(await authed("/v1/account/webhook/events?limit=50")) as WebhookEvent[],
+);
+
+export const retryWebhookEvent = createServerFn({ method: "POST" })
+	.inputValidator(input)
+	.handler(
+		async ({ data }) =>
+			(await authed(
+				`/v1/account/webhook/events/${encodeURIComponent(str(data.id))}/retry`,
+				"POST",
+			)) as WebhookEvent,
+	);
+
+export const retryFailedWebhookEvents = createServerFn({
+	method: "POST",
+}).handler(
+	async () =>
+		(await authed("/v1/account/webhook/events/retry-failed", "POST")) as {
+			retried: number;
+		},
 );
 
 // CSV text and suggested filename; the file is built from the viewing key and never public

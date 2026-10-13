@@ -4,17 +4,19 @@ import {
 	type Account,
 	type ApiKey,
 	createKey,
-	type Delivery,
 	exportCsv,
 	getInvoice,
 	type Invoice,
 	type InvoiceDetail,
 	type LimitHit,
+	retryFailedWebhookEvents,
+	retryWebhookEvent,
 	revokeKey,
 	rotateSecret,
 	saveWebhook,
 	setName,
 	testWebhook,
+	type WebhookEvent,
 } from "#/server/dash";
 import {
 	Amount,
@@ -442,10 +444,10 @@ const deliveryError = (e: string) =>
 
 export function Webhooks({
 	webhook,
-	deliveries,
+	events,
 }: {
 	webhook: { url: string | null; secret: string };
-	deliveries: Delivery[];
+	events: WebhookEvent[];
 }) {
 	const router = useRouter();
 	const { run, busy } = useAction();
@@ -574,90 +576,7 @@ export function Webhooks({
 					</div>
 				</Card>
 
-				<Card
-					title="Recent deliveries"
-					description="The last 50 webhook attempts."
-					flush
-					actions={
-						<Button
-							size="sm"
-							icon="refresh"
-							pending={busy === "refresh"}
-							onClick={() => run("refresh", () => router.invalidate())}
-						>
-							Refresh
-						</Button>
-					}
-				>
-					{deliveries.length === 0 ? (
-						<EmptyState icon="hook" title="No deliveries yet">
-							Send a test event or wait for an invoice to change.
-						</EmptyState>
-					) : (
-						<Table
-							caption="Recent webhook deliveries"
-							head={
-								<>
-									<th className={th}>Event</th>
-									<th className={th}>Result</th>
-									<th className={th}>Invoice</th>
-									<th className={th}>Attempt</th>
-									<th className={`${th} text-right`}>Time</th>
-								</>
-							}
-						>
-							{deliveries.map((d) => (
-								<tr key={d.id}>
-									<td className={`${td} font-mono text-[13px]`}>{d.type}</td>
-									<td
-										className={td}
-										data-sm-end={okCode(d.status_code) || undefined}
-										data-wide={!okCode(d.status_code) || undefined}
-									>
-										{okCode(d.status_code) ? (
-											<Badge tone="success">{d.status_code} OK</Badge>
-										) : (
-											<span className="inline-flex max-w-full items-center gap-2 sm:max-w-64">
-												<Badge tone="danger">{d.status_code ?? "Failed"}</Badge>
-												{d.error && (
-													<span
-														className="truncate text-xs text-kertas/60"
-														title={d.error}
-													>
-														{deliveryError(d.error)}
-													</span>
-												)}
-											</span>
-										)}
-									</td>
-									<td
-										className={td}
-										data-label="Invoice"
-										data-sm-hide={!d.invoice_id || undefined}
-									>
-										{d.invoice_id ? (
-											<Link
-												to="/dashboard/invoices"
-												search={{ id: d.invoice_id }}
-												className="dash-focus rounded-sm font-mono text-[13px] text-kertas/85 underline decoration-white/25 underline-offset-2 hover:decoration-kertas"
-											>
-												{d.invoice_id.slice(0, 8)}
-											</Link>
-										) : (
-											<span className="text-kertas/55">—</span>
-										)}
-									</td>
-									<td className={`${td} tabular-nums`} data-label="Attempt">
-										#{d.attempt}
-									</td>
-									<td className={`${td} text-right`} data-label="Time" data-end>
-										<Time s={d.created_at} />
-									</td>
-								</tr>
-							))}
-						</Table>
-					)}
-				</Card>
+				<WebhookEvents events={events} />
 
 				<Card
 					title="Verify the signature"
@@ -699,6 +618,351 @@ export function Webhooks({
 				verification until your server uses the new one.
 			</ConfirmDialog>
 		</>
+	);
+}
+
+const EV_FILTERS = ["all", "pending", "delivered", "failed"] as const;
+const EV_TONE = {
+	delivered: "success",
+	pending: "neutral",
+	failed: "danger",
+} as const;
+const EV_EMPTY: Record<(typeof EV_FILTERS)[number], string> = {
+	all: "Send a test event or wait for an invoice to change.",
+	pending: "No events are waiting to be sent.",
+	delivered: "No event has been delivered yet.",
+	failed: "Nothing failed. Events that fail all 3 tries show up here.",
+};
+
+const result = (code: number | null, err: string | null) =>
+	code !== null ? `HTTP ${code}` : err ? deliveryError(err) : "—";
+
+function useNow(active: boolean) {
+	const [now, setNow] = useState(() => Date.now() / 1000);
+	useEffect(() => {
+		if (!active) return;
+		const t = setInterval(() => setNow(Date.now() / 1000), 1000);
+		return () => clearInterval(t);
+	}, [active]);
+	return now;
+}
+
+function EventStatus({ e, now }: { e: WebhookEvent; now: number }) {
+	const wait = e.next_attempt_at ? Math.ceil(e.next_attempt_at - now) : 0;
+	return (
+		<span className="inline-flex flex-wrap items-center gap-2">
+			<Badge tone={EV_TONE[e.status]} dot>
+				{e.status === "delivered"
+					? "Delivered"
+					: e.status === "failed"
+						? "Failed"
+						: "Pending"}
+			</Badge>
+			{e.status === "pending" && (
+				<span className="text-xs text-kertas/60 tabular-nums">
+					{wait > 0 ? `next try in ${wait} s` : "trying now"}
+				</span>
+			)}
+		</span>
+	);
+}
+
+function WebhookEvents({ events }: { events: WebhookEvent[] }) {
+	const router = useRouter();
+	const { run, busy } = useAction();
+	const [filter, setFilter] = useState<(typeof EV_FILTERS)[number]>("all");
+	const [openId, setOpenId] = useState<string | null>(null);
+	const [confirmAll, setConfirmAll] = useState(false);
+	const counts = useMemo(() => {
+		const c = { all: events.length, pending: 0, delivered: 0, failed: 0 };
+		for (const e of events) c[e.status]++;
+		return c;
+	}, [events]);
+	const now = useNow(counts.pending > 0);
+	const rows =
+		filter === "all" ? events : events.filter((e) => e.status === filter);
+	const open = events.find((e) => e.id === openId) ?? null;
+
+	// Poll while anything is pending; stops by itself once none is
+	useEffect(() => {
+		if (counts.pending === 0) return;
+		const t = setInterval(() => router.invalidate(), 5000);
+		return () => clearInterval(t);
+	}, [counts.pending, router]);
+
+	const retry = (e: WebhookEvent) =>
+		run(
+			`retry-${e.id}`,
+			async () => {
+				await retryWebhookEvent({ data: { id: e.id } });
+				await router.invalidate();
+			},
+			"Retry queued",
+		);
+
+	return (
+		<Card
+			title="Events"
+			description="Each event is tried up to 3 times (right away, after 10 seconds and after 1 minute). Failed events can be sent again."
+			flush
+			actions={
+				<>
+					{counts.failed > 0 && (
+						<Button
+							size="sm"
+							icon="rotate"
+							pending={busy === "retry-all"}
+							onClick={() => setConfirmAll(true)}
+						>
+							Retry all failed
+						</Button>
+					)}
+					<Button
+						size="sm"
+						icon="refresh"
+						pending={busy === "refresh"}
+						onClick={() => run("refresh", () => router.invalidate())}
+					>
+						Refresh
+					</Button>
+				</>
+			}
+		>
+			<div
+				role="radiogroup"
+				aria-label="Filter events by status"
+				className="flex gap-1 overflow-x-auto px-4 pb-3"
+			>
+				{EV_FILTERS.map((f) => (
+					<label
+						key={f}
+						className="dash-focus relative flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-kertas/65 capitalize transition-colors hover:text-kertas has-[:checked]:bg-white/[0.09] has-[:checked]:font-medium has-[:checked]:text-kertas has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-lunas"
+					>
+						<input
+							type="radio"
+							name="event-status"
+							value={f}
+							checked={filter === f}
+							onChange={() => setFilter(f)}
+							className="sr-only"
+						/>
+						{f}
+						<span className="text-xs text-kertas/55 tabular-nums">
+							{counts[f]}
+						</span>
+					</label>
+				))}
+			</div>
+			<output className="sr-only" aria-live="polite">
+				{counts.all} events: {counts.pending} pending, {counts.delivered}{" "}
+				delivered, {counts.failed} failed
+			</output>
+			{rows.length === 0 ? (
+				<EmptyState
+					icon="hook"
+					title={filter === "all" ? "No events yet" : `No ${filter} events`}
+				>
+					{EV_EMPTY[filter]}
+				</EmptyState>
+			) : (
+				<Table
+					caption="Webhook events"
+					head={
+						<>
+							<th className={th}>Time</th>
+							<th className={th}>Type</th>
+							<th className={th}>Invoice</th>
+							<th className={th}>Status</th>
+							<th className={th}>Attempts</th>
+							<th className={th}>Last result</th>
+							<th className={`${th} text-right`}>
+								<span className="sr-only">Actions</span>
+							</th>
+						</>
+					}
+				>
+					{rows.map((e) => (
+						<tr
+							key={e.id}
+							data-href
+							onClick={(ev) => {
+								if (!(ev.target as HTMLElement).closest("button,a"))
+									setOpenId(e.id);
+							}}
+						>
+							<td className={td} data-label="Time">
+								<Time s={e.created_at} />
+							</td>
+							<td className={`${td} font-mono text-[13px]`} data-label="Type">
+								<button
+									type="button"
+									className="dash-focus rounded-sm underline decoration-white/20 underline-offset-2 hover:decoration-kertas"
+									onClick={() => setOpenId(e.id)}
+									aria-label={`Open event ${e.type}`}
+								>
+									{e.type}
+								</button>
+							</td>
+							<td className={td} data-label="Invoice">
+								{e.invoice_id ? (
+									<Link
+										to="/dashboard/invoices"
+										search={{ id: e.invoice_id }}
+										className="dash-focus rounded-sm font-mono text-[13px] text-kertas/85 underline decoration-white/25 underline-offset-2 hover:decoration-kertas"
+									>
+										{e.invoice_id.slice(0, 8)}
+									</Link>
+								) : (
+									<span className="text-kertas/55">—</span>
+								)}
+							</td>
+							<td className={td} data-label="Status" data-wide>
+								<EventStatus e={e} now={now} />
+							</td>
+							<td className={`${td} tabular-nums`} data-label="Attempts">
+								{e.attempts} / {e.max_attempts}
+							</td>
+							<td className={td} data-label="Last result">
+								<span
+									className="inline-block max-w-56 truncate align-bottom text-kertas/75"
+									title={e.last_error ?? undefined}
+								>
+									{result(e.last_status_code, e.last_error)}
+								</span>
+							</td>
+							<td className={`${td} text-right`} data-end>
+								{e.status === "failed" && (
+									<Button
+										size="sm"
+										icon="rotate"
+										pending={busy === `retry-${e.id}`}
+										aria-label={`Retry event ${e.type}`}
+										onClick={() => retry(e)}
+									>
+										Retry
+									</Button>
+								)}
+							</td>
+						</tr>
+					))}
+				</Table>
+			)}
+
+			<Dialog
+				open={!!open}
+				onClose={() => setOpenId(null)}
+				variant="sheet"
+				initialFocus="self"
+				title={open?.type ?? "Event"}
+				description={
+					open && (
+						<Mono value={open.id} head={8} tail={4} label="Copy event ID" />
+					)
+				}
+				footer={
+					open?.status === "failed" && (
+						<Button
+							variant="primary"
+							icon="rotate"
+							pending={busy === `retry-${open.id}`}
+							aria-label={`Retry event ${open.type}`}
+							onClick={() => retry(open)}
+						>
+							Retry
+						</Button>
+					)
+				}
+			>
+				{open && (
+					<div className="space-y-6" aria-live="polite">
+						<dl className="grid grid-cols-[auto_1fr] items-center gap-x-6 gap-y-3 text-sm">
+							<dt className="text-kertas/55">Status</dt>
+							<dd>
+								<EventStatus e={open} now={now} />
+							</dd>
+							<dt className="text-kertas/55">Attempts</dt>
+							<dd className="tabular-nums">
+								{open.attempts} / {open.max_attempts}
+							</dd>
+							<dt className="text-kertas/55">Invoice</dt>
+							<dd>
+								{open.invoice_id ? (
+									<Link
+										to="/dashboard/invoices"
+										search={{ id: open.invoice_id }}
+										className="dash-focus rounded-sm font-mono text-[13px] underline decoration-white/25 underline-offset-2"
+									>
+										{open.invoice_id}
+									</Link>
+								) : (
+									"—"
+								)}
+							</dd>
+							<dt className="text-kertas/55">Created</dt>
+							<dd>
+								<Time s={open.created_at} absoluteOnly />
+							</dd>
+							<dt className="text-kertas/55">Updated</dt>
+							<dd>
+								<Time s={open.updated_at} absoluteOnly />
+							</dd>
+						</dl>
+						<section>
+							<h3 className="mb-2 text-sm font-bold">Attempts</h3>
+							{open.deliveries.length === 0 ? (
+								<p className="text-sm text-kertas/65">No attempt yet.</p>
+							) : (
+								<ol className="divide-y divide-white/[0.06] rounded-xl border border-white/[0.08]">
+									{open.deliveries.map((d) => (
+										<li
+											key={d.attempt}
+											className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2.5 text-sm"
+										>
+											<span className="tabular-nums">#{d.attempt}</span>
+											<span
+												className={
+													okCode(d.status_code)
+														? "text-lunas"
+														: "text-[#ffa597]"
+												}
+												title={d.error ?? undefined}
+											>
+												{result(d.status_code, d.error)}
+											</span>
+											<span className="text-xs text-kertas/60">
+												<Time s={d.created_at} absoluteOnly />
+											</span>
+										</li>
+									))}
+								</ol>
+							)}
+						</section>
+					</div>
+				)}
+			</Dialog>
+
+			<ConfirmDialog
+				open={confirmAll}
+				onClose={() => setConfirmAll(false)}
+				title={`Send ${counts.failed} failed ${counts.failed === 1 ? "event" : "events"} again?`}
+				confirmLabel="Retry all"
+				danger={false}
+				onConfirm={() =>
+					run(
+						"retry-all",
+						async () => {
+							const r = await retryFailedWebhookEvents();
+							await router.invalidate();
+							return r;
+						},
+						(r) =>
+							`${r.retried} ${r.retried === 1 ? "event" : "events"} queued`,
+					)
+				}
+			>
+				Each one gets 3 new tries.
+			</ConfirmDialog>
+		</Card>
 	);
 }
 
