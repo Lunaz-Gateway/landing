@@ -190,7 +190,7 @@ function InvoiceV({ on }: { on: boolean }) {
 			<div className="seq rounded-xl border border-white/10 p-4" style={t(0)}>
 				<p className={label}>Viewing key</p>
 				<p className="mt-2 font-mono text-sm text-kertas/70">
-					uview1qp8…{" "}
+					uivk1qp8…{" "}
 					<span className="rounded bg-kertas/15 px-8 text-transparent">
 						hidden
 					</span>

@@ -56,10 +56,10 @@ function Settings() {
 							</Badge>
 						</Item>
 						<Item label="Viewing key">
-							{account.ufvk_set ? (
+							{account.viewing_key_set ? (
 								<span className="flex flex-wrap items-center gap-2">
 									<Badge tone="success" dot>
-										Connected
+										Connected (incoming only)
 									</Badge>
 									<span className="text-kertas/55">
 										Set once at onboarding; it can't be changed here.

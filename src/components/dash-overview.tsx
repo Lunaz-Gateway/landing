@@ -10,7 +10,7 @@ import {
 	type AccountPlan,
 	type ApiKey,
 	type Invoice,
-	setUfvk,
+	setViewingKey,
 	testWebhook,
 } from "#/server/dash";
 import { UsageStrip } from "./dash-billing";
@@ -74,7 +74,7 @@ export function Overview({ account, keys, invoices, webhook, plan }: Props) {
 		{
 			title: "Connect your wallet",
 			desc: "Give Lunaz a viewing key so it can see incoming payments, never spend them.",
-			done: account.ufvk_set,
+			done: account.viewing_key_set,
 			body: <WalletStep network={account.network} />,
 		},
 		{
@@ -103,7 +103,7 @@ export function Overview({ account, keys, invoices, webhook, plan }: Props) {
 	];
 	const current = steps.findIndex((s) => !s.done);
 	const doneCount = steps.slice(0, REQUIRED).filter((s) => s.done).length;
-	const onboarded = account.ufvk_set && active.length > 0;
+	const onboarded = account.viewing_key_set && active.length > 0;
 	const [showSteps, setShowSteps] = useState(false);
 	const expanded = !onboarded || showSteps;
 	const complete = doneCount === REQUIRED;
@@ -505,7 +505,7 @@ function WalletStep({ network }: { network: Account["network"] }) {
 		[
 			"own",
 			"Use my own viewing key",
-			"Paste the Unified Full Viewing Key of a wallet you already have.",
+			"Paste the incoming viewing key of a wallet you already have.",
 		],
 		[
 			"gen",
@@ -550,15 +550,15 @@ function WalletStep({ network }: { network: Account["network"] }) {
 	);
 }
 
-function useSaveUfvk() {
+function useSaveViewingKey() {
 	const router = useRouter();
 	const [error, setError] = useState("");
 	const [busy, setBusy] = useState(false);
-	const save = async (ufvk: string, after?: () => void) => {
+	const save = async (viewingKey: string, after?: () => void) => {
 		setBusy(true);
 		setError("");
 		try {
-			await setUfvk({ data: { ufvk } });
+			await setViewingKey({ data: { viewing_key: viewingKey } });
 			after?.();
 			await router.invalidate();
 		} catch (e) {
@@ -577,7 +577,7 @@ function GenerateWallet({ onUseOwn }: { onUseOwn: () => void }) {
 	const [revealed, setRevealed] = useState(false);
 	const [written, setWritten] = useState(false);
 	const [confirming, setConfirming] = useState(false);
-	const { error, busy, save } = useSaveUfvk();
+	const { error, busy, save } = useSaveViewingKey();
 	const soon = genError === "Coming soon";
 	const head = useRef<HTMLHeadingElement>(null);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: focus on phase change
@@ -733,38 +733,39 @@ function GenerateWallet({ onUseOwn }: { onUseOwn: () => void }) {
 }
 
 function OwnKey({ network }: { network: Account["network"] }) {
-	const { error, busy, save } = useSaveUfvk();
+	const { error, busy, save } = useSaveViewingKey();
 	return (
 		<form
 			className="space-y-3 rounded-xl border border-white/[0.08] bg-[#1f2246] p-4"
 			onSubmit={(e) => {
 				e.preventDefault();
-				save(String(new FormData(e.currentTarget).get("ufvk")));
+				save(String(new FormData(e.currentTarget).get("viewing_key")));
 			}}
 		>
 			<Textarea
-				id="ufvk"
-				label="Unified Full Viewing Key"
+				id="viewing_key"
+				label="Incoming viewing key"
 				rows={4}
 				required
 				spellCheck={false}
-				placeholder={network === "main" ? "uview1…" : "uviewtest1…"}
+				placeholder={network === "main" ? "uivk1…" : "uivktest1…"}
 				className="[&_textarea]:font-mono [&_textarea]:break-all"
-				hint="This can only be set once. Check that it is the right wallet before you save."
+				hint="Paste your wallet's incoming viewing key (uivk1…). Lunaz uses it to create payment addresses and see incoming payments. It cannot see your balance or spend funds. A full viewing key (uview1…) also works; Lunaz keeps only its incoming part. This can only be set once. Check that it is the right wallet before you save."
 			/>
 			<details className="text-sm text-kertas/80">
 				<summary className="cursor-pointer font-medium text-kertas">
 					Where do I find it?
 				</summary>
 				<p className="mt-2">
-					In ZODL, open the account settings and export the viewing key. With
-					zcash-devtool, run{" "}
-					<code className="font-mono">wallet list-accounts</code>; it prints the
-					UFVK for each account. It starts with{" "}
+					With zcash-devtool, run{" "}
+					<code className="font-mono">wallet list-accounts</code>. The command
+					prints the incoming viewing key on the{" "}
+					<code className="font-mono">UIVK:</code> line. It starts with{" "}
 					<code className="font-mono">
-						{network === "main" ? "uview1" : "uviewtest1"}
+						{network === "main" ? "uivk1" : "uivktest1"}
 					</code>
-					.
+					. If your wallet exports only a full viewing key (UFVK), paste that
+					instead.
 				</p>
 			</details>
 			<ErrorText error={error} />

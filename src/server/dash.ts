@@ -14,7 +14,8 @@ export type Account = {
 	email: string;
 	name: string;
 	network: "main" | "test";
-	ufvk_set: boolean;
+	viewing_key_set: boolean;
+	ufvk_set?: boolean;
 	webhook_url: string | null;
 	plan?: PlanId;
 };
@@ -189,7 +190,8 @@ export const getAccount = createServerFn({ method: "GET" }).handler(
 		const token = getCookie(COOKIE);
 		if (!token) return null;
 		try {
-			return (await call("/v1/account", "GET", undefined, token)) as Account;
+			const a = (await call("/v1/account", "GET", undefined, token)) as Account;
+			return { ...a, viewing_key_set: a.viewing_key_set ?? !!a.ufvk_set };
 		} catch (e) {
 			if (e instanceof ApiError && e.status === 401) {
 				deleteCookie(COOKIE, { path: "/" });
@@ -200,10 +202,17 @@ export const getAccount = createServerFn({ method: "GET" }).handler(
 	},
 );
 
-export const setUfvk = createServerFn({ method: "POST" })
+export const setViewingKey = createServerFn({ method: "POST" })
 	.inputValidator(input)
 	.handler(async ({ data }) => {
-		await authed("/v1/account/ufvk", "PUT", { ufvk: str(data.ufvk).trim() });
+		const key = str(data.viewing_key).trim();
+		try {
+			await authed("/v1/account/viewing-key", "PUT", { viewing_key: key });
+		} catch (e) {
+			// Older backend without the new endpoint
+			if (!(e instanceof ApiError && e.status === 404)) throw e;
+			await authed("/v1/account/ufvk", "PUT", { ufvk: key });
+		}
 		return { ok: true };
 	});
 
