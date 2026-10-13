@@ -4,13 +4,15 @@ Marketing site and developer dashboard for Lunaz, a Zcash payment gateway. Built
 
 ## Features
 
-- Marketing page at `/` with a link to the demo store.
+- Marketing page at `/` with a link to the Sunday Market demo.
 - Signup and login (`/dashboard/signup`, `/dashboard/login`).
 - Viewing key (UFVK) onboarding, so the gateway can watch for payments without spend authority.
 - API keys: create (shown once) and revoke.
 - Webhook endpoint, signing secret rotation, test delivery and a delivery log.
 - Invoices list with status, received and overpaid amounts.
 - Accountant CSV export.
+- Withdraw to bank (`/dashboard/withdraw`): quote ZEC to IDR or USD, the partner step for identity and bank, the deposit details and a live status timeline. The partner is a mock for now (TransFi sandbox next). The dashboard sends only the bank name and the last 4 digits of the account number.
+- Settings page and a getting-started timeline for new accounts.
 
 ## Architecture
 
