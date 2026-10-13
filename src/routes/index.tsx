@@ -121,20 +121,11 @@ function Nav() {
 					<a className={`${link} hidden md:inline`} href="#how">
 						How it works
 					</a>
-					<a className={`${link} hidden md:inline`} href="#marketplaces">
-						Marketplaces
-					</a>
 					<a className={`${link} hidden lg:inline`} href="#security">
 						Security
 					</a>
 					<a className={`${link} hidden md:inline`} href="#developers">
 						Developers
-					</a>
-					<a className={`${link} hidden lg:inline`} href={GITHUB}>
-						GitHub
-					</a>
-					<a className={link} href="/dashboard">
-						Dashboard
 					</a>
 					<a
 						href={DEMO}
@@ -172,10 +163,10 @@ function Hero() {
 					<div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
 						<DemoButton />
 						<a
-							href="#developers"
+							href="/dashboard"
 							className="press rounded-full border border-white/20 px-6 py-3.5 font-bold text-kertas transition-colors hover:border-white/40"
 						>
-							Read the API
+							Dashboard
 						</a>
 					</div>
 					<p className="mt-5 max-w-[31rem] text-sm text-kertas/60">
