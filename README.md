@@ -33,6 +33,8 @@ browser --> TanStack Start server functions (src/server/dash.ts) --> core-servic
 | `LUNAZ_API_URL` | server, runtime | core-service base URL (default `http://127.0.0.1:8097`) |
 | `MAGIC_SECRET_KEY` | server, runtime, secret | Magic secret key (`sk_…`), used to verify DID tokens |
 | `LUNAZ_INTERNAL_TOKEN` | server, runtime, secret | Bearer token for core-service `/v1/auth/exchange` (must match core-service) |
+| `PUBLIC_ORIGIN` | server, runtime | Public origin behind a TLS proxy (e.g. `https://lunaz.alwaysbedream.dev`). The CSRF check compares `Origin`/`Referer` to it when the browser sends no `Sec-Fetch-Site` header; without it the internal `http://` request URL is used |
+| `HSTS` | server, runtime | `1` adds `Strict-Transport-Security: max-age=31536000; includeSubDomains`. Better set at the TLS proxy |
 | `VITE_MAGIC_PUBLISHABLE_KEY` | public, build time | Magic publishable key (`pk_…`); sign-in shows "not configured" if empty |
 | `VITE_DEMO_URL` | public, build time | URL of the demo app behind "Try the demo" (default `http://localhost:3000`) |
 | `VITE_SALES_EMAIL` | public, build time | Address behind the Enterprise "Contact us" button (default `sales@lunaz.example`) |
@@ -88,6 +90,16 @@ services:
       LUNAZ_INTERNAL_TOKEN: ${LUNAZ_INTERNAL_TOKEN}
     restart: unless-stopped
 ```
+
+## Security headers and CSP
+
+`server.mjs` adds these to every response (pages, assets, server functions, errors): `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and a restrictive `Permissions-Policy`.
+
+The CSP allows only `'self'` plus Magic (`auth.magic.link`, `*.magic.link`, `api.magic.link`: script, iframe and API) and Google Fonts (`fonts.googleapis.com` styles, `fonts.gstatic.com` fonts). `script-src` and `style-src` keep `'unsafe-inline'` because TanStack Start injects inline hydration scripts and has no per-request nonce hook. To allow a new origin (analytics, another font host), add it to the matching directive in the `csp` array at the top of `server.mjs`, rebuild the image and check the browser console for CSP violations.
+
+Caching: `/dashboard/*` and `/_serverFn/*` send `Cache-Control: no-store`; hashed `/assets/*` are `public, max-age=31536000, immutable`.
+
+The session cookie is `HttpOnly`, `SameSite=Lax`, 7 days, and named `__Host-lunaz_session` in production (`Secure`, `Path=/`, no `Domain`) or `lunaz_session` in development over http. After the rename existing sessions are not read, so users sign in once more. The webhook signing secret is not part of page data: it is fetched by a server function only when you click Reveal or Copy.
 
 ## Deploy notes
 
