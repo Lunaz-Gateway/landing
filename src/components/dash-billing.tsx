@@ -46,8 +46,7 @@ const FOR: Record<PlanId, string> = {
 	platform: "Marketplaces with many sellers.",
 	enterprise: "SLA, compliance and custom volume.",
 };
-// Placeholder sales address until the real one exists
-const SALES = "mailto:sales@lunaz.example";
+const SALES = `mailto:${import.meta.env.VITE_SALES_EMAIL ?? "sales@lunaz.example"}`;
 const INCLUDED =
 	"shielded invoices, cross-chain payments, signed webhooks, accountant CSV, withdraw to bank.";
 const PERIODS = [1, 3, 12] as const;
