@@ -11,7 +11,7 @@ const pct = (x: number, y: number) => ({
 
 const clients = [
 	["Marketplace", 30],
-	["Hosted checkout", 58],
+	["Online store", 58],
 	["Your app · API", 86],
 ] as const;
 const tokens = [

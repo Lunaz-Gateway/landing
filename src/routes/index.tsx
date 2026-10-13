@@ -418,8 +418,8 @@ function Marketplaces() {
 					</h2>
 					<p className="mt-6 max-w-xl text-lg leading-relaxed text-malam/75">
 						A marketplace or platform can onboard every seller as its own
-						non-custodial merchant. A single online shop uses the same API, with
-						a ready checkout page or its own. In a physical store, a
+						non-custodial merchant. A single online store calls the same API from
+						its own checkout page. In a physical store, a
 						point-of-sale app calls the same API.
 					</p>
 					<dl className="mt-12 grid gap-x-10 gap-y-8 sm:grid-cols-2">
