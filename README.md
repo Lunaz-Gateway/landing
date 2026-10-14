@@ -90,31 +90,3 @@ services:
       LUNAZ_INTERNAL_TOKEN: ${LUNAZ_INTERNAL_TOKEN}
     restart: unless-stopped
 ```
-
-## Security headers and CSP
-
-`server.mjs` adds these to every response (pages, assets, server functions, errors): `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and a restrictive `Permissions-Policy`.
-
-The CSP allows only `'self'` plus Magic (`auth.magic.link`, `*.magic.link`, `api.magic.link`: script, iframe and API) and Google Fonts (`fonts.googleapis.com` styles, `fonts.gstatic.com` fonts). `script-src` and `style-src` keep `'unsafe-inline'` because TanStack Start injects inline hydration scripts and has no per-request nonce hook. To allow a new origin (analytics, another font host), add it to the matching directive in the `csp` array at the top of `server.mjs`, rebuild the image and check the browser console for CSP violations.
-
-Caching: `/dashboard/*` and `/_serverFn/*` send `Cache-Control: no-store`; hashed `/assets/*` are `public, max-age=31536000, immutable`.
-
-The session cookie is `HttpOnly`, `SameSite=Lax`, 7 days, and named `__Host-lunaz_session` in production (`Secure`, `Path=/`, no `Domain`) or `lunaz_session` in development over http. After the rename existing sessions are not read, so users sign in once more. The webhook signing secret is not part of page data: it is fetched by a server function only when you click Reveal or Copy.
-
-## Deploy notes
-
-- Serve it over HTTPS. The session cookie is `Secure` in production, so login does not work over plain HTTP (except on `localhost` in most browsers).
-- Put a TLS reverse proxy (Caddy, nginx, Traefik) in front and publish the container on `127.0.0.1` only.
-- The container must reach core-service at `LUNAZ_API_URL`. That URL is internal and is never sent to the browser.
-- Changing `VITE_DEMO_URL`, `VITE_DOCS_URL`, `VITE_SALES_EMAIL` or `VITE_MAGIC_PUBLISHABLE_KEY` requires a rebuild. `MAGIC_SECRET_KEY` and `LUNAZ_INTERNAL_TOKEN` are runtime env only; never pass them as build args.
-- Add the site origin to the allowed domains in the Magic dashboard.
-- `LUNAZ_API_URL` is the core-service base without `/v1`, for example `https://example.com/api` (prefix stripped by the proxy) or `http://<core-service container>:8080` on a shared Docker network.
-- `LUNAZ_INTERNAL_TOKEN` must be identical on landing and core-service.
-
-### Sign-in troubleshooting
-
-- "Sign-in is not configured" right when the login page opens: the image was built without `VITE_MAGIC_PUBLISHABLE_KEY`. Pass it as a build arg and rebuild.
-- Server log `signInWithMagic: MAGIC_SECRET_KEY or LUNAZ_INTERNAL_TOKEN unset`: set both as runtime env.
-- Server log `exchange failed 503 internal auth not configured`: set `LUNAZ_INTERNAL_TOKEN` on core-service.
-- Server log `exchange failed 401`: the internal token differs between the two services.
-- Server log `exchange failed 404`: wrong `LUNAZ_API_URL` (prefix not stripped) or an old core-service without `/v1/auth/exchange`.
