@@ -119,10 +119,10 @@ const VARIANTS: Record<Variant, string> = {
 		"border border-[#ff8a7a]/30 text-[#ffa597] font-medium hover:border-[#ff8a7a]/60 hover:bg-[#ff8a7a]/10",
 };
 const SIZES: Record<Size, string> = {
-	sm: "h-8 gap-1.5 px-2.5 text-[13px]",
-	md: "h-9 gap-2 px-3.5 text-sm",
+	sm: "h-9 gap-1.5 px-3 text-[13px] sm:h-8 sm:px-2.5",
+	md: "h-10 gap-2 px-3.5 text-sm sm:h-9",
 	lg: "h-11 gap-2 px-5 text-sm",
-	icon: "size-8 justify-center",
+	icon: "size-10 justify-center sm:size-8",
 };
 
 export const button = (variant: Variant = "secondary", size: Size = "md") =>
@@ -161,10 +161,12 @@ export function Button({
 /* ---------- Form fields ---------- */
 
 export const control =
-	"w-full rounded-lg border border-white/[0.13] bg-[#171a36] px-3 text-sm text-kertas placeholder:text-kertas/35 transition-colors duration-150 hover:border-white/25 focus-visible:border-lunas/70 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-lunas/20 aria-[invalid=true]:border-[#ff8a7a]/70 disabled:opacity-60";
+	"w-full rounded-lg border border-white/[0.12] bg-[#171a36] shadow-[inset_0_1px_2px_rgb(0_0_0/0.15)] px-3 text-sm text-kertas placeholder:text-kertas/35 transition-colors duration-150 hover:border-white/25 focus-visible:border-lunas/70 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-lunas/20 aria-[invalid=true]:border-[#ff8a7a]/70 disabled:opacity-60";
 
 type FieldProps = {
 	label: ReactNode;
+	/** Keep the label for assistive tech only, when the context already names the field */
+	hideLabel?: boolean;
 	hint?: ReactNode;
 	error?: string;
 	id?: string;
@@ -173,6 +175,7 @@ type FieldProps = {
 
 function FieldShell({
 	label,
+	hideLabel,
 	hint,
 	error,
 	id,
@@ -181,7 +184,10 @@ function FieldShell({
 }: FieldProps & { id: string; children: ReactNode }) {
 	return (
 		<div className={className}>
-			<label htmlFor={id} className="mb-1.5 block text-sm font-medium">
+			<label
+				htmlFor={id}
+				className={hideLabel ? "sr-only" : "mb-1.5 block text-sm font-medium"}
+			>
 				{label}
 			</label>
 			{children}
@@ -209,6 +215,7 @@ const describe = (id: string, p: FieldProps) =>
 
 export function Input({
 	label,
+	hideLabel,
 	hint,
 	error,
 	id,
@@ -218,11 +225,11 @@ export function Input({
 	const auto = useId();
 	const fid = id ?? auto;
 	return (
-		<FieldShell {...{ label, hint, error, className }} id={fid}>
+		<FieldShell {...{ label, hideLabel, hint, error, className }} id={fid}>
 			<input
 				id={fid}
 				name={id}
-				className={`${control} h-9`}
+				className={`${control} h-10 sm:h-9`}
 				aria-invalid={!!error || undefined}
 				aria-describedby={describe(fid, { label, hint, error })}
 				{...props}
@@ -271,7 +278,7 @@ export function Select({
 			<select
 				id={fid}
 				name={id}
-				className={`${control} dash-select h-9 pr-8`}
+				className={`${control} dash-select h-10 pr-8 sm:h-9`}
 				aria-invalid={!!error || undefined}
 				aria-describedby={describe(fid, { label, hint, error })}
 				{...props}
@@ -329,25 +336,31 @@ export function Card({
 		>
 			{(title || actions) && (
 				<header
-					className={`flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-5 pt-5 ${flush ? "pb-4" : ""}`}
+					className={`flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-4 pt-4 sm:px-5 sm:pt-5 ${flush ? "pb-4" : ""}`}
 				>
 					<div className="min-w-0">
 						{title && (
-							<h2 id={hid} className="text-[15px] font-bold">
+							<h2 id={hid} className="text-[15px] font-bold tracking-[-0.01em]">
 								{title}
 							</h2>
 						)}
 						{description && (
-							<p className="mt-1 text-sm text-kertas/65">{description}</p>
+							<p className="mt-1 max-w-2xl text-sm leading-relaxed text-kertas/65">
+								{description}
+							</p>
 						)}
 					</div>
 					{actions && <div className="flex flex-wrap gap-2">{actions}</div>}
 				</header>
 			)}
 			{children &&
-				(flush ? children : <div className="p-5 pt-4">{children}</div>)}
+				(flush ? (
+					children
+				) : (
+					<div className="p-4 pt-4 sm:p-5 sm:pt-4">{children}</div>
+				))}
 			{footer && (
-				<footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] px-5 py-3 text-xs text-kertas/60">
+				<footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] px-4 py-3 text-xs text-kertas/60 sm:px-5">
 					{footer}
 				</footer>
 			)}
@@ -365,16 +378,20 @@ export function PageHeader({
 	actions?: ReactNode;
 }) {
 	return (
-		<div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+		<div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 sm:mb-8">
 			<div className="min-w-0">
-				<h1 className="text-2xl font-bold tracking-[-0.02em]">{title}</h1>
+				<h1 className="text-[26px] leading-tight font-bold tracking-[-0.025em] sm:text-[28px]">
+					{title}
+				</h1>
 				{description && (
-					<div className="mt-1 min-h-5 text-sm text-kertas/65">
+					<div className="mt-1.5 min-h-5 max-w-2xl text-sm leading-relaxed text-kertas/65">
 						{description}
 					</div>
 				)}
 			</div>
-			{actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+			{actions && (
+				<div className="flex flex-wrap items-center gap-2">{actions}</div>
+			)}
 		</div>
 	);
 }
@@ -400,7 +417,7 @@ export function Badge({
 }) {
 	return (
 		<span
-			className={`inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-md px-2 text-xs font-medium ring-1 ring-inset ${TONES[tone]}`}
+			className={`inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-medium ring-1 ring-inset ${TONES[tone]}`}
 		>
 			{dot && <span className="size-1.5 rounded-full bg-current" />}
 			{children}
@@ -424,15 +441,60 @@ export function EmptyState({
 	action?: ReactNode;
 }) {
 	return (
-		<div className="flex flex-col items-center px-6 py-12 text-center">
-			<span className="mb-4 grid size-10 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-kertas/70">
+		<div className="flex flex-col items-center px-6 py-12 text-center sm:py-14">
+			<span className="dash-empty-icon mb-4 grid size-12 place-items-center rounded-2xl text-kertas/75">
 				<Icon name={icon} className="size-5" />
 			</span>
-			<p className="font-bold">{title}</p>
+			<p className="font-bold tracking-[-0.01em]">{title}</p>
 			{children && (
 				<div className="mt-1 max-w-sm text-sm text-kertas/65">{children}</div>
 			)}
 			{action && <div className="mt-5">{action}</div>}
+		</div>
+	);
+}
+
+/** Radio filter: wrapping chips on phones, a segmented control from sm up */
+export function Segmented<T extends string>({
+	label,
+	name,
+	options,
+	value,
+	onChange,
+}: {
+	label: string;
+	name: string;
+	options: { value: T; label: string; count?: number }[];
+	value: T;
+	onChange: (v: T) => void;
+}) {
+	return (
+		<div
+			role="radiogroup"
+			aria-label={label}
+			className="flex flex-wrap gap-1.5 sm:inline-flex sm:flex-nowrap sm:gap-0.5 sm:rounded-lg sm:bg-black/[0.15] sm:p-0.5 sm:ring-1 sm:ring-white/[0.07] sm:ring-inset"
+		>
+			{options.map((o) => (
+				<label
+					key={o.value}
+					className="flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-[13px] text-kertas/65 ring-1 ring-white/[0.09] transition-colors duration-150 ring-inset hover:text-kertas has-[:checked]:bg-white/[0.1] has-[:checked]:font-medium has-[:checked]:text-kertas has-[:checked]:ring-white/[0.14] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-lunas sm:h-8 sm:rounded-md sm:px-2.5 sm:ring-0 sm:has-[:checked]:shadow-[0_1px_2px_rgb(0_0_0/0.25)]"
+				>
+					<input
+						type="radio"
+						name={name}
+						value={o.value}
+						checked={value === o.value}
+						onChange={() => onChange(o.value)}
+						className="sr-only"
+					/>
+					{o.label}
+					{o.count !== undefined && (
+						<span className="text-xs text-kertas/50 tabular-nums">
+							{o.count}
+						</span>
+					)}
+				</label>
+			))}
 		</div>
 	);
 }
@@ -454,10 +516,10 @@ export function Tip({
 	);
 }
 
-/* ---------- Tables (stack into cards below sm) ---------- */
+/* ---------- Tables (rows become compact two-column cards below sm) ---------- */
 
 export const th =
-	"h-10 px-4 text-left text-xs font-medium whitespace-nowrap text-kertas/55";
+	"h-9 px-4 text-left text-[11px] font-semibold tracking-[0.06em] whitespace-nowrap text-kertas/50 uppercase";
 export const td = "px-4 py-3 align-middle whitespace-nowrap";
 
 export function Table({
@@ -759,7 +821,7 @@ export function CopyButton({
 				type="button"
 				onClick={onClick}
 				aria-label={label}
-				className="dash-focus inline-grid size-6 shrink-0 place-items-center rounded-md text-kertas/60 transition-colors hover:bg-white/[0.08] hover:text-kertas"
+				className="dash-focus -my-2 inline-grid size-9 shrink-0 place-items-center rounded-md text-kertas/60 transition-colors hover:bg-white/[0.08] hover:text-kertas sm:my-0 sm:size-6"
 			>
 				<Icon name={done ? "check" : "copy"} className="size-3.5" />
 			</button>

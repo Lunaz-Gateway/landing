@@ -2,33 +2,39 @@ import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { Overview } from "#/components/dash-overview";
 import { PageSkeleton, TableSkeleton } from "#/components/dash-sections";
 import { PageError, Skeleton } from "#/components/dash-ui";
-import { getFees, getWebhookUrl, listInvoices, listKeys } from "#/server/dash";
+import {
+	getFees,
+	getOfframp,
+	getWebhookUrl,
+	listInvoices,
+	listKeys,
+} from "#/server/dash";
 
 const useAccount = () => getRouteApi("/dashboard/_app").useLoaderData();
 
 export const Route = createFileRoute("/dashboard/_app/")({
 	loader: async () => {
-		const [keys, invoices, webhook, fees] = await Promise.all([
+		const [keys, invoices, webhook, fees, offramp] = await Promise.all([
 			listKeys(),
 			listInvoices(),
 			getWebhookUrl(),
 			getFees().catch(() => null),
+			// Only for the USD estimate; the page works without it
+			getOfframp().catch(() => null),
 		]);
-		return { keys, invoices, webhook, fees };
+		return { keys, invoices, webhook, fees, zecUsd: offramp?.zec_usd ?? null };
 	},
 	head: () => ({ meta: [{ title: "Overview · Lunaz Dashboard" }] }),
 	pendingMs: 150,
 	pendingComponent: () => (
 		<PageSkeleton title="Overview">
-			<div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-				{[0, 1, 2].map((i) => (
-					<Skeleton
-						key={i}
-						className={`h-[118px] w-full rounded-xl ${i === 2 ? "col-span-2 lg:col-span-1" : ""}`}
-					/>
-				))}
+			<Skeleton className="h-[188px] w-full rounded-[14px]" />
+			<div className="grid gap-6 lg:grid-cols-3">
+				<div className="lg:col-span-2">
+					<TableSkeleton rows={5} cols={4} />
+				</div>
+				<Skeleton className="h-[300px] w-full rounded-[14px]" />
 			</div>
-			<TableSkeleton rows={5} cols={4} />
 		</PageSkeleton>
 	),
 	errorComponent: PageError,

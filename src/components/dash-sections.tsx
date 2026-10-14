@@ -25,6 +25,7 @@ import {
 	Card,
 	ConfirmDialog,
 	CopyButton,
+	control,
 	copyText,
 	Dialog,
 	EmptyState,
@@ -34,6 +35,7 @@ import {
 	Input,
 	Mono,
 	PageHeader,
+	Segmented,
 	Select,
 	Skeleton,
 	Table,
@@ -45,6 +47,10 @@ import {
 } from "./dash-ui";
 
 /* ---------- Shared ---------- */
+
+/** Mono id that opens a detail view; rows are clickable too, so it stays quiet until hover */
+export const idLink =
+	"dash-focus rounded-sm font-mono text-[13px] text-kertas underline decoration-transparent underline-offset-[3px] transition-colors hover:decoration-kertas/60";
 
 export const curlFor = (key = "lz_...") => `curl -X POST $LUNAZ/v1/invoices \\
   -H "Authorization: Bearer ${key}" \\
@@ -313,22 +319,17 @@ export function ApiKeys({ keys }: { keys: ApiKey[] }) {
 									key={k.id}
 									className={`sm:h-14 ${k.revoked_at ? "opacity-60" : ""}`}
 								>
-									<td className={`${td} font-medium`} data-label="Name">
-										{k.name}
-									</td>
-									<td
-										className={`${td} font-mono text-[13px]`}
-										data-label="Key"
-									>
+									<td className={`${td} font-medium`}>{k.name}</td>
+									<td className={`${td} font-mono text-[13px]`} data-sm-hide>
 										{k.prefix}…
 									</td>
-									<td className={td} data-label="Created">
+									<td className={td} data-sm-hide>
 										<Time s={k.created_at} />
 									</td>
-									<td className={td} data-label="Last used">
+									<td className={td} data-sm-hide>
 										<Time s={k.last_used_at} empty="Never" />
 									</td>
-									<td className={td} data-label="Status">
+									<td className={td} data-sm-end>
 										{k.revoked_at ? (
 											<Badge tone="muted">Revoked</Badge>
 										) : (
@@ -337,8 +338,19 @@ export function ApiKeys({ keys }: { keys: ApiKey[] }) {
 											</Badge>
 										)}
 									</td>
+									<td className={`${td} sm:hidden`} data-sub>
+										<span className="font-mono">{k.prefix}…</span>
+										{" · "}
+										{k.last_used_at ? (
+											<>
+												used <Time s={k.last_used_at} />
+											</>
+										) : (
+											"never used"
+										)}
+									</td>
 									<td
-										className={`${td} self-end text-right`}
+										className={`${td} text-right`}
 										data-end
 										data-sm-end
 										data-sm-hide={k.revoked_at ? true : undefined}
@@ -405,6 +417,16 @@ function verify(rawBody, header, secret, toleranceSecs = 300) {
 
 // if (!verify(raw, req.headers["x-lunaz-signature"], process.env.LUNAZ_WEBHOOK_SECRET)) return 401
 // Retries resend the same event: skip X-Lunaz-Event-Id values you already processed.`;
+
+const EVENT_TYPES = [
+	"invoice.paid",
+	"invoice.underpaid",
+	"swap.refunded",
+	"swap.failed",
+	"swap.incomplete_deposit",
+	"withdrawal.updated",
+	"test",
+];
 
 const okCode = (c: number | null) => c !== null && c >= 200 && c < 300;
 
@@ -575,13 +597,21 @@ export function Webhooks({
 							<code className="font-mono text-kertas/85">
 								{"{t}.{raw body}"}
 							</code>
-							. Reject a t more than 5 minutes off and de-duplicate by event id.
-							The JSON body has an{" "}
-							<code className="font-mono text-kertas/85">id</code>,{" "}
+							. Reject a <code className="font-mono text-kertas/85">t</code>{" "}
+							more than 5 minutes off and de-duplicate by event id. The JSON
+							body has an <code className="font-mono text-kertas/85">id</code>,{" "}
 							<code className="font-mono text-kertas/85">created_at</code> and a{" "}
-							<code className="font-mono text-kertas/85">type</code>:
-							invoice.paid, invoice.underpaid, swap.refunded, swap.failed,
-							swap.incomplete_deposit, withdrawal.updated or test.
+							<code className="font-mono text-kertas/85">type</code>:{" "}
+							{EVENT_TYPES.map((t, i) => (
+								<span key={t}>
+									<code className="font-mono text-kertas/85">{t}</code>
+									{i === EVENT_TYPES.length - 1
+										? "."
+										: i === EVENT_TYPES.length - 2
+											? " or "
+											: ", "}
+								</span>
+							))}
 						</>
 					}
 				>
@@ -624,6 +654,8 @@ const EV_EMPTY: Record<(typeof EV_FILTERS)[number], string> = {
 	delivered: "No event has been delivered yet.",
 	failed: "Nothing failed. Events that fail all 3 tries show up here.",
 };
+
+const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 
 const result = (code: number | null, err: string | null) =>
 	code !== null ? `HTTP ${code}` : err ? deliveryError(err) : "—";
@@ -719,30 +751,18 @@ function WebhookEvents({ events }: { events: WebhookEvent[] }) {
 				</>
 			}
 		>
-			<div
-				role="radiogroup"
-				aria-label="Filter events by status"
-				className="flex gap-1 overflow-x-auto px-4 pb-3"
-			>
-				{EV_FILTERS.map((f) => (
-					<label
-						key={f}
-						className="dash-focus relative flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-kertas/65 capitalize transition-colors hover:text-kertas has-[:checked]:bg-white/[0.09] has-[:checked]:font-medium has-[:checked]:text-kertas has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-lunas"
-					>
-						<input
-							type="radio"
-							name="event-status"
-							value={f}
-							checked={filter === f}
-							onChange={() => setFilter(f)}
-							className="sr-only"
-						/>
-						{f}
-						<span className="text-xs text-kertas/55 tabular-nums">
-							{counts[f]}
-						</span>
-					</label>
-				))}
+			<div className="px-4 pb-4 sm:px-5">
+				<Segmented
+					label="Filter events by status"
+					name="event-status"
+					value={filter}
+					onChange={setFilter}
+					options={EV_FILTERS.map((f) => ({
+						value: f,
+						label: cap(f),
+						count: counts[f],
+					}))}
+				/>
 			</div>
 			<output className="sr-only" aria-live="polite">
 				{counts.all} events: {counts.pending} pending, {counts.delivered}{" "}
@@ -781,20 +801,20 @@ function WebhookEvents({ events }: { events: WebhookEvent[] }) {
 									setOpenId(e.id);
 							}}
 						>
-							<td className={td} data-label="Time">
+							<td className={td} data-sm-hide>
 								<Time s={e.created_at} />
 							</td>
-							<td className={`${td} font-mono text-[13px]`} data-label="Type">
+							<td className={td}>
 								<button
 									type="button"
-									className="dash-focus rounded-sm underline decoration-white/20 underline-offset-2 hover:decoration-kertas"
+									className={idLink}
 									onClick={() => setOpenId(e.id)}
 									aria-label={`Open event ${e.type}`}
 								>
 									{e.type}
 								</button>
 							</td>
-							<td className={td} data-label="Invoice">
+							<td className={td} data-sm-hide>
 								{e.invoice_id ? (
 									<Link
 										to="/dashboard/invoices"
@@ -807,21 +827,29 @@ function WebhookEvents({ events }: { events: WebhookEvent[] }) {
 									<span className="text-kertas/55">—</span>
 								)}
 							</td>
-							<td className={td} data-label="Status" data-wide>
+							<td className={td} data-sm-end>
 								<EventStatus e={e} now={now} />
 							</td>
-							<td className={`${td} tabular-nums`} data-label="Attempts">
+							<td className={`${td} tabular-nums`} data-sm-hide>
 								{e.attempts} / {e.max_attempts}
 							</td>
-							<td className={td} data-label="Last result" data-wide>
+							<td className={td} data-sub>
+								<span className="sm:hidden">
+									<Time s={e.created_at} /> · {e.attempts}/{e.max_attempts} ·{" "}
+								</span>
 								<span
-									className="block truncate text-kertas/75 sm:inline-block sm:max-w-56 sm:align-bottom"
+									className="truncate text-kertas/75 sm:inline-block sm:max-w-56 sm:align-bottom"
 									title={e.last_error ?? undefined}
 								>
 									{result(e.last_status_code, e.last_error)}
 								</span>
 							</td>
-							<td className={`${td} text-right`} data-end>
+							<td
+								className={`${td} text-right`}
+								data-end
+								data-sm-end
+								data-sm-hide={e.status !== "failed" || undefined}
+							>
 								{e.status === "failed" && (
 									<Button
 										size="sm"
@@ -1347,36 +1375,24 @@ export function Invoices({
 				</Card>
 			) : (
 				<div className="dash-card overflow-hidden">
-					<div className="flex flex-wrap items-center gap-3 border-b border-white/[0.08] p-3">
-						<div
-							role="radiogroup"
-							aria-label="Filter by status"
-							className="-m-1 flex w-[calc(100%+0.5rem)] min-w-0 gap-1 overflow-x-auto p-1 sm:w-auto sm:flex-1"
-						>
-							{FILTERS.map((f) => (
-								<label
-									key={f}
-									className="dash-focus relative flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-kertas/65 capitalize transition-colors hover:text-kertas has-[:checked]:bg-white/[0.09] has-[:checked]:font-medium has-[:checked]:text-kertas has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-lunas"
-								>
-									<input
-										type="radio"
-										name="status"
-										value={f}
-										checked={status === f}
-										onChange={() =>
-											setSearch({
-												...search,
-												status: f === "all" ? undefined : f,
-											})
-										}
-										className="sr-only"
-									/>
-									{f}
-									<span className="text-xs text-kertas/55 tabular-nums">
-										{counts[f] ?? 0}
-									</span>
-								</label>
-							))}
+					<div className="flex flex-wrap items-center gap-3 p-3 sm:px-4">
+						<div className="min-w-0 sm:flex-1">
+							<Segmented
+								label="Filter by status"
+								name="status"
+								value={status}
+								onChange={(f) =>
+									setSearch({
+										...search,
+										status: f === "all" ? undefined : f,
+									})
+								}
+								options={FILTERS.map((f) => ({
+									value: f,
+									label: cap(f),
+									count: counts[f] ?? 0,
+								}))}
+							/>
 						</div>
 						<div className="relative w-full sm:w-64">
 							<Icon
@@ -1394,7 +1410,7 @@ export function Invoices({
 									setSearch({ ...search, q: e.target.value || undefined })
 								}
 								placeholder="Search invoice ID or txid"
-								className="h-8 w-full rounded-lg border border-white/[0.13] bg-[#171a36] pr-3 pl-8 text-[13px] placeholder:text-kertas/35 hover:border-white/25 focus-visible:border-lunas/70 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-lunas/20"
+								className={`${control} h-10 pl-8 text-[13px] sm:h-8`}
 							/>
 						</div>
 					</div>
@@ -1429,7 +1445,7 @@ export function Invoices({
 									<td className={td}>
 										<button
 											type="button"
-											className="dash-focus rounded-sm font-mono text-[13px] underline decoration-white/20 underline-offset-2 hover:decoration-kertas"
+											className={idLink}
 											onClick={() => setSearch({ ...search, id: i.id })}
 											aria-label={`Open invoice ${i.id}`}
 										>
@@ -1439,19 +1455,16 @@ export function Invoices({
 									<td className={td} data-sm-end>
 										<StatusPill status={i.status} />
 									</td>
-									<td
-										className={`${td} text-right`}
-										data-label="Amount"
-										data-end
-									>
+									<td className={`${td} text-right`} data-end>
 										<Amount zat={i.amount_zat} />
+										{i.received_zat > 0 && i.received_zat !== i.amount_zat && (
+											<span className="text-[13px] text-kertas/60 sm:hidden">
+												{" · "}
+												{zec(i.received_zat)} received
+											</span>
+										)}
 									</td>
-									<td
-										className={`${td} text-right`}
-										data-label="Received"
-										data-end
-										data-sm-hide={i.received_zat === 0 || undefined}
-									>
+									<td className={`${td} text-right`} data-end data-sm-hide>
 										<Amount zat={i.received_zat} muted={i.received_zat === 0} />
 										{i.overpaid_zat > 0 && (
 											<span className="ml-1.5 text-xs text-lunas">
@@ -1459,19 +1472,14 @@ export function Invoices({
 											</span>
 										)}
 									</td>
-									<td
-										className={`${td} text-right`}
-										data-label="Fee"
-										data-end
-										data-sm-hide={!i.fee_zat || undefined}
-									>
-										<Amount zat={i.fee_zat ?? 0} muted={!i.fee_zat} />
+									<td className={`${td} text-right`} data-end data-sm-hide>
+										{i.status === "expired" ? (
+											<span className="text-kertas/55">—</span>
+										) : (
+											<Amount zat={i.fee_zat ?? 0} muted={!i.fee_zat} />
+										)}
 									</td>
-									<td
-										className={td}
-										data-label="Txid"
-										data-sm-hide={!i.txid || undefined}
-									>
+									<td className={td} data-sm-hide>
 										{i.txid ? (
 											<Mono value={i.txid} label="Copy txid" />
 										) : (
@@ -1479,9 +1487,9 @@ export function Invoices({
 										)}
 									</td>
 									<td
-										className={`${td} text-right`}
-										data-label="Created"
-										data-end
+										className={`${td} text-right text-kertas/65`}
+										data-sub
+										data-sm-end
 									>
 										<Time s={i.created_at} />
 									</td>
@@ -1490,7 +1498,7 @@ export function Invoices({
 						</Table>
 					)}
 					{rows.length > 0 && (
-						<div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] px-4 py-3 text-xs text-kertas/55">
+						<div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-3 text-xs text-kertas/55">
 							<span className="tabular-nums">
 								Showing {Math.min(limit, rows.length)} of {rows.length}
 							</span>
@@ -1518,14 +1526,20 @@ export function Invoices({
 }
 
 /** Business name editor; used as a prompt on Overview and in Settings */
-export function NameForm({ initial = "" }: { initial?: string }) {
+export function NameForm({
+	initial = "",
+	hideLabel,
+}: {
+	initial?: string;
+	hideLabel?: boolean;
+}) {
 	const router = useRouter();
 	const [name, setNameValue] = useState(initial);
 	const [error, setError] = useState("");
 	const [busy, setBusy] = useState(false);
 	return (
 		<form
-			className="space-y-3"
+			className="flex flex-col gap-3"
 			onSubmit={async (e) => {
 				e.preventDefault();
 				setBusy(true);
@@ -1539,19 +1553,28 @@ export function NameForm({ initial = "" }: { initial?: string }) {
 				setBusy(false);
 			}}
 		>
-			<Input
-				id="shop-name"
-				label="Your shop or business name"
-				autoComplete="organization"
-				value={name}
-				onChange={(e) => setNameValue(e.target.value)}
-				maxLength={80}
-				required
-			/>
+			<div className="flex flex-wrap items-end gap-3">
+				<Input
+					id="shop-name"
+					label="Your shop or business name"
+					hideLabel={hideLabel}
+					className="min-w-48 max-w-md flex-1"
+					autoComplete="organization"
+					value={name}
+					onChange={(e) => setNameValue(e.target.value)}
+					maxLength={80}
+					required
+				/>
+				<Button
+					type="submit"
+					variant="primary"
+					pending={busy}
+					disabled={!!initial && name.trim() === initial}
+				>
+					Save name
+				</Button>
+			</div>
 			<ErrorText error={error} />
-			<Button type="submit" variant="primary" size="sm" pending={busy}>
-				Save name
-			</Button>
 		</form>
 	);
 }
