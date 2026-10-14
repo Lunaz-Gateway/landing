@@ -578,7 +578,7 @@ X-Lunaz-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256 of "{t}.{body}">`;
 				</div>
 				<pre
 					data-reveal
-					className="self-start overflow-x-auto rounded-2xl border border-white/10 bg-black/25 p-6 font-mono text-[13px] leading-relaxed text-kertas sm:p-8 lg:col-span-6 lg:col-start-7 lg:mt-14"
+					className="scrollbar-none self-start overflow-x-auto rounded-2xl border border-white/10 bg-black/25 p-6 font-mono text-[13px] leading-relaxed text-kertas sm:p-8 lg:col-span-6 lg:col-start-7 lg:mt-14"
 				>
 					<code>{code}</code>
 				</pre>

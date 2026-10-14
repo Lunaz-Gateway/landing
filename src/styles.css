@@ -337,3 +337,11 @@ input[type="date"] { color-scheme: dark; }
     @starting-style { opacity: 0; }
   }
 }
+
+/* Scrolls normally, but without a visible scrollbar */
+@utility scrollbar-none {
+	scrollbar-width: none;
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}
