@@ -23,14 +23,19 @@ export const Route = createFileRoute("/dashboard/_app/settings")({
 
 function Item({
 	label,
+	field,
 	children,
 }: {
 	label: string;
+	/** Row holds a form control: align the label with the control's text */
+	field?: boolean;
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="grid gap-1 py-3.5 sm:grid-cols-[12rem_1fr] sm:gap-4">
-			<dt className="text-sm text-kertas/55">{label}</dt>
+		<div className="grid gap-1.5 py-4 sm:grid-cols-[12rem_1fr] sm:gap-4">
+			<dt className={`text-sm text-kertas/60 ${field ? "sm:pt-2" : ""}`}>
+				{label}
+			</dt>
 			<dd className="min-w-0 text-sm break-words">{children}</dd>
 		</div>
 	);
@@ -45,9 +50,9 @@ function Settings() {
 			<PageHeader title="Settings" description="Your Lunaz account." />
 			<div className="space-y-6">
 				<Card title="Account" flush>
-					<dl className="divide-y divide-white/[0.06] border-t border-white/[0.08] px-5">
-						<Item label="Name">
-							<NameForm key={account.name} initial={account.name} />
+					<dl className="divide-y divide-white/[0.06] border-t border-white/[0.07] px-4 sm:px-5">
+						<Item label="Name" field>
+							<NameForm key={account.name} initial={account.name} hideLabel />
 						</Item>
 						<Item label="Email">{account.email}</Item>
 						<Item label="Network">

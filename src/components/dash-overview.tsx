@@ -1,4 +1,4 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
 	type GeneratedWallet,
@@ -17,6 +17,7 @@ import {
 	Code,
 	CreateKeyForm,
 	curlFor,
+	idLink,
 	KeyRevealDialog,
 	NameForm,
 	type NewKey,
@@ -50,6 +51,7 @@ type Props = {
 	invoices: Invoice[];
 	webhook: { url: string | null };
 	fees: Fees | null;
+	zecUsd: number | null;
 };
 
 type Step = {
@@ -62,7 +64,14 @@ type Step = {
 
 const REQUIRED = 4;
 
-export function Overview({ account, keys, invoices, webhook, fees }: Props) {
+export function Overview({
+	account,
+	keys,
+	invoices,
+	webhook,
+	fees,
+	zecUsd,
+}: Props) {
 	const active = keys.filter((k) => !k.revoked_at);
 	const steps: Step[] = [
 		{
@@ -118,7 +127,7 @@ export function Overview({ account, keys, invoices, webhook, fees }: Props) {
 	}, [current]);
 
 	const timeline = (
-		<section className="dash-card p-5" aria-labelledby="gs-h">
+		<section className="dash-card p-4 sm:p-5" aria-labelledby="gs-h">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
 					<h2
@@ -247,52 +256,88 @@ export function Overview({ account, keys, invoices, webhook, fees }: Props) {
 			<PageHeader
 				title="Overview"
 				description={`Welcome back${account.name ? `, ${account.name}` : ""}.`}
+				actions={
+					complete && (
+						<Button
+							variant="ghost"
+							size="sm"
+							aria-expanded={showSteps}
+							onClick={() => setShowSteps(!showSteps)}
+						>
+							<Icon name="check" className="size-4 text-lunas" />
+							{showSteps ? "Hide setup steps" : "Setup complete"}
+						</Button>
+					)
+				}
 			/>
 			{namePrompt}
 			<div className="space-y-6">
-				{fees && <FeesStrip fees={fees} />}
-				<Stats invoices={invoices} />
+				{fees && fees.outstanding_zat > 0 && <FeesNotice fees={fees} />}
+				<Summary invoices={invoices} zecUsd={zecUsd} />
 				<div className="grid gap-6 lg:grid-cols-3 lg:items-start">
 					<RecentInvoices invoices={invoices} />
 					<QuickActions hasWebhook={!!webhook.url} />
 				</div>
-				{timeline}
+				{(!complete || showSteps) && timeline}
 			</div>
 		</>
 	);
 }
 
-function FeesStrip({ fees }: { fees: Fees }) {
-	const due = fees.outstanding_zat > 0;
+function FeesNotice({ fees }: { fees: Fees }) {
 	return (
 		<section
 			aria-label="Outstanding fees"
-			className="dash-card flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4"
+			className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border border-[#ffb86b]/20 bg-[#ffb86b]/[0.06] px-4 py-3.5 sm:px-5"
 		>
-			<div className="flex items-center gap-2">
-				<span className="text-sm text-kertas/65">Outstanding fees</span>
-				<Badge tone={due ? "warning" : "success"}>
-					{zec(fees.outstanding_zat)} ZEC
-				</Badge>
+			<span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#ffb86b]/[0.14] text-[#ffc685]">
+				<Icon name="alert" />
+			</span>
+			<div className="min-w-0 flex-1 basis-56 text-sm">
+				<p className="font-bold">
+					<span className="tabular-nums">{zec(fees.outstanding_zat)} ZEC</span>{" "}
+					in outstanding fees
+				</p>
+				<p className="mt-0.5 text-kertas/65">
+					Fees your buyers did not pay with their order. Settle them any time.
+				</p>
 			</div>
-			<Link
-				to="/dashboard/fees"
-				className={`${button(due ? "primary" : "ghost", "sm")} sm:ml-auto`}
-			>
-				{due ? "Pay fees" : "Fees"}
+			<Link to="/dashboard/fees" className={button("secondary")}>
+				Pay fees
 				<Icon name="arrow" className="size-3.5" />
 			</Link>
 		</section>
 	);
 }
 
-function Stats({ invoices }: { invoices: Invoice[] }) {
-	const paid = invoices.filter((i) => i.status === "paid").length;
-	const pending = invoices.filter(
-		(i) => i.status === "pending" || i.status === "detected",
-	).length;
-	const underpaid = invoices.filter((i) => i.status === "underpaid").length;
+const usd = (n: number) =>
+	n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+
+// Status mix, in the order an invoice usually moves through
+const MIX: { status: Invoice["status"]; label: string; color: string }[] = [
+	{ status: "paid", label: "Paid", color: "bg-lunas" },
+	{ status: "detected", label: "Detected", color: "bg-[#8fb8ff]" },
+	{ status: "pending", label: "Pending", color: "bg-kertas/45" },
+	{ status: "underpaid", label: "Underpaid", color: "bg-[#ffb86b]" },
+	{ status: "expired", label: "Expired", color: "bg-white/15" },
+];
+
+function Summary({
+	invoices,
+	zecUsd,
+}: {
+	invoices: Invoice[];
+	zecUsd: number | null;
+}) {
+	const count = (s: Invoice["status"]) =>
+		invoices.filter((i) => i.status === s).length;
 	const received = invoices.reduce((t, i) => t + i.received_zat, 0);
+	const total = invoices.length;
+	const awaiting = count("pending") + count("detected");
+	const underpaid = count("underpaid");
+	const mix = MIX.map((m) => ({ ...m, n: count(m.status) })).filter(
+		(m) => m.n > 0,
+	);
 	const stats: {
 		label: string;
 		value: ReactNode;
@@ -300,69 +345,122 @@ function Stats({ invoices }: { invoices: Invoice[] }) {
 		warn?: boolean;
 	}[] = [
 		{
-			label: "Invoices paid",
-			value: paid,
-			hint: `of ${invoices.length} invoices`,
-		},
-		{
-			label: "Received",
+			label: "Paid",
 			value: (
 				<>
-					{zec(received)}{" "}
-					<span className="text-base font-medium text-kertas/60">ZEC</span>
+					{count("paid")}
+					<span className="ml-1 text-sm font-medium text-kertas/50">
+						/ {total}
+					</span>
 				</>
 			),
-			hint: "Total across all invoices",
+			hint: "Invoices fully paid",
 		},
-		{ label: "Awaiting payment", value: pending, hint: "Pending or detected" },
-		...(underpaid > 0
-			? [
-					{
-						label: "Underpaid",
-						value: underpaid,
-						hint: "Need follow-up",
-						warn: true,
-					},
-				]
-			: []),
+		{ label: "Awaiting", value: awaiting, hint: "Pending or detected" },
+		{
+			label: "Underpaid",
+			value: underpaid,
+			hint: underpaid ? "Need follow-up" : "Nothing to follow up",
+			warn: underpaid > 0,
+		},
 	];
 	return (
-		<section aria-label="Invoice stats">
-			<dl
-				className={`grid grid-cols-2 gap-3 sm:gap-4 ${stats.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
-			>
-				{stats.map((s, i) => (
-					<div
-						key={s.label}
-						className={`dash-card p-4 sm:p-5 ${stats.length === 3 && i === 2 ? "col-span-2 lg:col-span-1" : ""}`}
-					>
-						<dt className="flex items-center gap-1.5 text-sm text-kertas/65">
-							{s.warn && (
-								<span className="size-1.5 rounded-full bg-[#ffb86b]" />
-							)}
-							{s.label}
-						</dt>
-						<dd className="mt-2 text-2xl font-bold tracking-[-0.02em] tabular-nums sm:text-[28px]">
-							{s.value}
-						</dd>
-						<dd className="mt-1 text-xs text-kertas/60">{s.hint}</dd>
-					</div>
-				))}
-			</dl>
-			{invoices.length >= 200 && (
-				<p className="mt-2 text-xs text-kertas/55">
-					Based on your 200 most recent invoices.
+		<section
+			className="dash-card grid overflow-hidden lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+			aria-labelledby="sum-h"
+		>
+			<div className="relative p-5 sm:p-6">
+				<span
+					aria-hidden="true"
+					className="pointer-events-none absolute -top-24 -left-16 size-64 rounded-full bg-lunas/[0.07] blur-3xl"
+				/>
+				<h2 id="sum-h" className="relative text-sm font-medium text-kertas/65">
+					Received
+				</h2>
+				<p className="relative mt-3 text-[38px] leading-none font-bold tracking-[-0.035em] tabular-nums sm:text-[44px]">
+					{zec(received)}
+					<span className="ml-2 text-lg font-semibold tracking-normal text-kertas/50">
+						ZEC
+					</span>
 				</p>
-			)}
+				<p className="relative mt-3 text-sm text-kertas/65 tabular-nums">
+					{zecUsd !== null && received > 0 ? (
+						<>
+							<span className="font-medium text-kertas/90">
+								≈ {usd((received / 1e8) * zecUsd)}
+							</span>{" "}
+							at {usd(zecUsd)} per ZEC
+						</>
+					) : (
+						`Across ${total} ${total === 1 ? "invoice" : "invoices"}`
+					)}
+				</p>
+				{total >= 200 && (
+					<p className="relative mt-1 text-xs text-kertas/55">
+						Based on your 200 most recent invoices.
+					</p>
+				)}
+			</div>
+			<div className="flex flex-col justify-between gap-6 border-t border-white/[0.07] p-5 sm:p-6 lg:border-t-0 lg:border-l">
+				<dl className="grid grid-cols-3 gap-4">
+					{stats.map((s) => (
+						<div key={s.label} className="min-w-0">
+							<dt className="flex items-center gap-1.5 text-[13px] text-kertas/60">
+								{s.warn && (
+									<span className="size-1.5 shrink-0 rounded-full bg-[#ffb86b]" />
+								)}
+								{s.label}
+							</dt>
+							<dd className="mt-1.5 text-2xl leading-tight font-bold tracking-[-0.02em] tabular-nums sm:text-[28px]">
+								{s.value}
+							</dd>
+							<dd className="mt-0.5 hidden text-xs text-kertas/55 sm:block">
+								{s.hint}
+							</dd>
+						</div>
+					))}
+				</dl>
+				{total > 0 && (
+					<div>
+						<div
+							aria-hidden="true"
+							className="flex h-2 gap-0.5 overflow-hidden rounded-full"
+						>
+							{mix.map((m) => (
+								<span
+									key={m.status}
+									className={`${m.color} first:rounded-l-full last:rounded-r-full`}
+									style={{ flexGrow: m.n }}
+								/>
+							))}
+						</div>
+						<ul
+							aria-label={`Status of your ${total} invoices`}
+							className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-kertas/65"
+						>
+							{mix.map((m) => (
+								<li key={m.status} className="flex items-center gap-1.5">
+									<span className={`size-2 rounded-full ${m.color}`} />
+									{m.label}
+									<span className="text-kertas/90 tabular-nums">{m.n}</span>
+								</li>
+							))}
+						</ul>
+					</div>
+				)}
+			</div>
 		</section>
 	);
 }
 
 function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
+	const navigate = useNavigate();
+	const open = (id: string) =>
+		navigate({ to: "/dashboard/invoices", search: { id } });
 	return (
 		<Card
 			title="Recent invoices"
-			className="lg:col-span-2"
+			className="overflow-hidden lg:col-span-2"
 			flush
 			actions={
 				<Link to="/dashboard/invoices" className={button("ghost", "sm")}>
@@ -383,12 +481,18 @@ function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
 				}
 			>
 				{invoices.slice(0, 5).map((i) => (
-					<tr key={i.id}>
+					<tr
+						key={i.id}
+						data-href
+						onClick={(e) => {
+							if (!(e.target as HTMLElement).closest("button,a")) open(i.id);
+						}}
+					>
 						<td className={td}>
 							<Link
 								to="/dashboard/invoices"
 								search={{ id: i.id }}
-								className="dash-focus rounded-sm font-mono text-[13px] underline decoration-white/20 underline-offset-2 hover:decoration-kertas"
+								className={idLink}
 							>
 								{i.id.slice(0, 8)}
 							</Link>
@@ -396,10 +500,14 @@ function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
 						<td className={td} data-sm-end>
 							<StatusPill status={i.status} />
 						</td>
-						<td className={`${td} text-right`} data-label="Amount" data-end>
+						<td className={`${td} text-right`} data-end>
 							<Amount zat={i.amount_zat} />
 						</td>
-						<td className={`${td} text-right`} data-label="Created" data-end>
+						<td
+							className={`${td} text-right text-kertas/65`}
+							data-sub
+							data-sm-end
+						>
 							<Time s={i.created_at} />
 						</td>
 					</tr>

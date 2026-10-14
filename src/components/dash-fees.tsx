@@ -56,7 +56,7 @@ export function FeesPage({ fees }: { fees: Fees }) {
 				description="Lunaz earns a small fee on each payment, paid by your buyer."
 			/>
 			<div className="space-y-6">
-				<section className="dash-card p-5" aria-labelledby="out-h">
+				<section className="dash-card p-4 sm:p-5" aria-labelledby="out-h">
 					<div className="flex flex-wrap items-end justify-between gap-4">
 						<div>
 							<h2 id="out-h" className="text-sm text-kertas/65">
@@ -115,7 +115,10 @@ export function FeesPage({ fees }: { fees: Fees }) {
 							</span>
 							. Your buyer pays it on top of the price.
 						</li>
-						<li>On a cross-chain payment, the fee is part of the swap app fee, also paid by the buyer.</li>
+						<li>
+							On a cross-chain payment, the fee is part of the swap app fee,
+							also paid by the buyer.
+						</li>
 						<li>
 							If a buyer's wallet pays only your part, the invoice is still
 							paid. The missing fee shows here as outstanding.
