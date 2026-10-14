@@ -8,7 +8,6 @@ import {
 	useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { planLabel } from "#/components/dash-sections";
 import {
 	Badge,
 	button,
@@ -43,7 +42,7 @@ const NAV: { to: string; label: string; icon: IconName }[] = [
 	{ to: "/dashboard/withdraw", label: "Withdraw", icon: "bank" },
 	{ to: "/dashboard/keys", label: "API keys", icon: "key" },
 	{ to: "/dashboard/webhooks", label: "Webhooks", icon: "hook" },
-	{ to: "/dashboard/billing", label: "Plan & billing", icon: "card" },
+	{ to: "/dashboard/fees", label: "Fees", icon: "card" },
 	{ to: "/dashboard/settings", label: "Settings", icon: "settings" },
 ];
 
@@ -75,17 +74,6 @@ function Sidebar({ account }: { account: Account }) {
 					<p className="truncate text-sm font-bold">
 						{account.name || account.email}
 					</p>
-					{account.plan && (
-						<Link
-							to="/dashboard/billing"
-							className="dash-focus shrink-0 rounded-md"
-							aria-label={`${planLabel(account.plan)} plan`}
-						>
-							<Badge tone={account.plan === "free" ? "muted" : "success"}>
-								{planLabel(account.plan)}
-							</Badge>
-						</Link>
-					)}
 				</div>
 				<div className="mt-1.5">
 					<Badge tone={account.network === "main" ? "success" : "neutral"}>

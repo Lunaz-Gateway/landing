@@ -8,7 +8,6 @@ import {
 	getInvoice,
 	type Invoice,
 	type InvoiceDetail,
-	type LimitHit,
 	retryFailedWebhookEvents,
 	retryWebhookEvent,
 	revealWebhookSecret,
@@ -23,7 +22,6 @@ import {
 	Amount,
 	Badge,
 	Button,
-	button,
 	Card,
 	ConfirmDialog,
 	CopyButton,
@@ -169,34 +167,6 @@ export function PageSkeleton({
 	);
 }
 
-/** Inline message for a 402 plan limit, with a way out */
-export function LimitNotice({ hit, what }: { hit: LimitHit; what: string }) {
-	return (
-		<div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-[#ffb86b]/30 bg-[#ffb86b]/[0.07] px-3.5 py-2.5 text-sm text-[#ffd9ad]">
-			<p className="flex min-w-0 flex-1 items-start gap-2">
-				<Icon name="alert" className="mt-0.5 size-4 text-[#ffc685]" />
-				<span className="text-pretty">
-					You've used{" "}
-					<span className="tabular-nums">
-						{hit.used} of {hit.limit}
-					</span>{" "}
-					{what} on the {planLabel(hit.plan)} plan.
-				</span>
-			</p>
-			<Link
-				to="/dashboard/billing"
-				search={{ upgrade: true }}
-				className={button("primary", "sm")}
-			>
-				Upgrade plan
-			</Link>
-		</div>
-	);
-}
-
-export const planLabel = (p: string) =>
-	p ? p[0].toUpperCase() + p.slice(1) : "";
-
 /* ---------- API keys ---------- */
 
 export type NewKey = { name: string; key: string };
@@ -207,7 +177,6 @@ export function CreateKeyForm({
 	onCreated: (k: NewKey) => void;
 }) {
 	const [name, setName] = useState("");
-	const [limit, setLimit] = useState<LimitHit | null>(null);
 	const { run, busy } = useAction();
 	return (
 		<form
@@ -216,8 +185,6 @@ export function CreateKeyForm({
 				e.preventDefault();
 				const k = await run("create", () => createKey({ data: { name } }));
 				if (!k) return;
-				if ("limit" in k) return setLimit(k.limit);
-				setLimit(null);
 				setName("");
 				onCreated({ name: k.name, key: k.key });
 			}}
@@ -242,9 +209,6 @@ export function CreateKeyForm({
 			>
 				Create key
 			</Button>
-			<div role="alert" className="w-full empty:hidden">
-				{limit && <LimitNotice hit={limit} what="API keys" />}
-			</div>
 		</form>
 	);
 }
@@ -617,7 +581,7 @@ export function Webhooks({
 							<code className="font-mono text-kertas/85">created_at</code> and a{" "}
 							<code className="font-mono text-kertas/85">type</code>:
 							invoice.paid, invoice.underpaid, swap.refunded, swap.failed,
-							swap.incomplete_deposit, withdrawal.updated, plan.updated or test.
+							swap.incomplete_deposit, withdrawal.updated or test.
 						</>
 					}
 				>
@@ -1447,6 +1411,7 @@ export function Invoices({
 									<th className={th}>Status</th>
 									<th className={`${th} text-right`}>Amount</th>
 									<th className={`${th} text-right`}>Received</th>
+									<th className={`${th} text-right`}>Fee</th>
 									<th className={th}>Txid</th>
 									<th className={`${th} text-right`}>Created</th>
 								</>
@@ -1493,6 +1458,14 @@ export function Invoices({
 												+{zec(i.overpaid_zat)}
 											</span>
 										)}
+									</td>
+									<td
+										className={`${td} text-right`}
+										data-label="Fee"
+										data-end
+										data-sm-hide={!i.fee_zat || undefined}
+									>
+										<Amount zat={i.fee_zat ?? 0} muted={!i.fee_zat} />
 									</td>
 									<td
 										className={td}

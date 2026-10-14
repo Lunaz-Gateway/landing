@@ -11,10 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardAppRouteImport } from './routes/dashboard/_app'
+import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing'
 import { Route as DashboardLoginRouteImport } from './routes/dashboard/login'
 import { Route as DashboardSignupRouteImport } from './routes/dashboard/signup'
 import { Route as DashboardAppIndexRouteImport } from './routes/dashboard/_app/index'
-import { Route as DashboardAppBillingRouteImport } from './routes/dashboard/_app/billing'
+import { Route as DashboardAppFeesRouteImport } from './routes/dashboard/_app/fees'
 import { Route as DashboardAppInvoicesRouteImport } from './routes/dashboard/_app/invoices'
 import { Route as DashboardAppKeysRouteImport } from './routes/dashboard/_app/keys'
 import { Route as DashboardAppSettingsRouteImport } from './routes/dashboard/_app/settings'
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const DashboardAppRoute = DashboardAppRouteImport.update({
   id: '/dashboard/_app',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardBillingRoute = DashboardBillingRouteImport.update({
+  id: '/dashboard/billing',
+  path: '/dashboard/billing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardLoginRoute = DashboardLoginRouteImport.update({
@@ -46,9 +52,9 @@ const DashboardAppIndexRoute = DashboardAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardAppRoute,
 } as any)
-const DashboardAppBillingRoute = DashboardAppBillingRouteImport.update({
-  id: '/billing',
-  path: '/billing',
+const DashboardAppFeesRoute = DashboardAppFeesRouteImport.update({
+  id: '/fees',
+  path: '/fees',
   getParentRoute: () => DashboardAppRoute,
 } as any)
 const DashboardAppInvoicesRoute = DashboardAppInvoicesRouteImport.update({
@@ -80,9 +86,10 @@ const DashboardAppWithdrawRoute = DashboardAppWithdrawRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardAppRouteWithChildren
+  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/login': typeof DashboardLoginRoute
   '/dashboard/signup': typeof DashboardSignupRoute
-  '/dashboard/billing': typeof DashboardAppBillingRoute
+  '/dashboard/fees': typeof DashboardAppFeesRoute
   '/dashboard/invoices': typeof DashboardAppInvoicesRoute
   '/dashboard/keys': typeof DashboardAppKeysRoute
   '/dashboard/settings': typeof DashboardAppSettingsRoute
@@ -92,9 +99,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/login': typeof DashboardLoginRoute
   '/dashboard/signup': typeof DashboardSignupRoute
-  '/dashboard/billing': typeof DashboardAppBillingRoute
+  '/dashboard/fees': typeof DashboardAppFeesRoute
   '/dashboard/invoices': typeof DashboardAppInvoicesRoute
   '/dashboard/keys': typeof DashboardAppKeysRoute
   '/dashboard/settings': typeof DashboardAppSettingsRoute
@@ -106,9 +114,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard/_app': typeof DashboardAppRouteWithChildren
+  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/login': typeof DashboardLoginRoute
   '/dashboard/signup': typeof DashboardSignupRoute
-  '/dashboard/_app/billing': typeof DashboardAppBillingRoute
+  '/dashboard/_app/fees': typeof DashboardAppFeesRoute
   '/dashboard/_app/invoices': typeof DashboardAppInvoicesRoute
   '/dashboard/_app/keys': typeof DashboardAppKeysRoute
   '/dashboard/_app/settings': typeof DashboardAppSettingsRoute
@@ -121,9 +130,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/dashboard/billing'
     | '/dashboard/login'
     | '/dashboard/signup'
-    | '/dashboard/billing'
+    | '/dashboard/fees'
     | '/dashboard/invoices'
     | '/dashboard/keys'
     | '/dashboard/settings'
@@ -133,9 +143,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dashboard/billing'
     | '/dashboard/login'
     | '/dashboard/signup'
-    | '/dashboard/billing'
+    | '/dashboard/fees'
     | '/dashboard/invoices'
     | '/dashboard/keys'
     | '/dashboard/settings'
@@ -146,9 +157,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard/_app'
+    | '/dashboard/billing'
     | '/dashboard/login'
     | '/dashboard/signup'
-    | '/dashboard/_app/billing'
+    | '/dashboard/_app/fees'
     | '/dashboard/_app/invoices'
     | '/dashboard/_app/keys'
     | '/dashboard/_app/settings'
@@ -160,6 +172,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardAppRoute: typeof DashboardAppRouteWithChildren
+  DashboardBillingRoute: typeof DashboardBillingRoute
   DashboardLoginRoute: typeof DashboardLoginRoute
   DashboardSignupRoute: typeof DashboardSignupRoute
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardAppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/billing': {
+      id: '/dashboard/billing'
+      path: '/dashboard/billing'
+      fullPath: '/dashboard/billing'
+      preLoaderRoute: typeof DashboardBillingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/login': {
@@ -201,11 +221,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAppIndexRouteImport
       parentRoute: typeof DashboardAppRoute
     }
-    '/dashboard/_app/billing': {
-      id: '/dashboard/_app/billing'
-      path: '/billing'
-      fullPath: '/dashboard/billing'
-      preLoaderRoute: typeof DashboardAppBillingRouteImport
+    '/dashboard/_app/fees': {
+      id: '/dashboard/_app/fees'
+      path: '/fees'
+      fullPath: '/dashboard/fees'
+      preLoaderRoute: typeof DashboardAppFeesRouteImport
       parentRoute: typeof DashboardAppRoute
     }
     '/dashboard/_app/invoices': {
@@ -247,7 +267,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardAppRouteChildren {
-  DashboardAppBillingRoute: typeof DashboardAppBillingRoute
+  DashboardAppFeesRoute: typeof DashboardAppFeesRoute
   DashboardAppInvoicesRoute: typeof DashboardAppInvoicesRoute
   DashboardAppKeysRoute: typeof DashboardAppKeysRoute
   DashboardAppSettingsRoute: typeof DashboardAppSettingsRoute
@@ -257,7 +277,7 @@ interface DashboardAppRouteChildren {
 }
 
 const DashboardAppRouteChildren: DashboardAppRouteChildren = {
-  DashboardAppBillingRoute: DashboardAppBillingRoute,
+  DashboardAppFeesRoute: DashboardAppFeesRoute,
   DashboardAppInvoicesRoute: DashboardAppInvoicesRoute,
   DashboardAppKeysRoute: DashboardAppKeysRoute,
   DashboardAppSettingsRoute: DashboardAppSettingsRoute,
@@ -273,6 +293,7 @@ const DashboardAppRouteWithChildren = DashboardAppRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardAppRoute: DashboardAppRouteWithChildren,
+  DashboardBillingRoute: DashboardBillingRoute,
   DashboardLoginRoute: DashboardLoginRoute,
   DashboardSignupRoute: DashboardSignupRoute,
 }

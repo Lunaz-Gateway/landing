@@ -312,7 +312,7 @@ input[type="date"] { color-scheme: dark; }
   }
 }
 
-/* Billing: the paid stamp */
+/* Paid stamp */
 .lunas-stamp {
   display: inline-block;
   padding: 0.35rem 1.1rem;
