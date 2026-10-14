@@ -23,7 +23,6 @@ export type Account = {
 	viewing_key_set: boolean;
 	ufvk_set?: boolean;
 	webhook_url: string | null;
-	plan?: PlanId;
 };
 export type ApiKey = {
 	id: string;
@@ -44,6 +43,7 @@ export type Invoice = {
 	created_at: number;
 	expires_at: number;
 	paid_at: number | null;
+	fee_zat?: number;
 };
 
 class ApiError extends Error {
@@ -263,42 +263,14 @@ export const listKeys = createServerFn({ method: "GET" }).handler(
 	async () => (await authed("/v1/account/api-keys")) as ApiKey[],
 );
 
-export type LimitHit = {
-	error: string;
-	limit: number;
-	used: number;
-	plan: string;
-};
-type NewKeyRes = { id: string; name: string; prefix: string; key: string };
-
-// A plan limit (402) comes back as data so the form can offer an upgrade
 export const createKey = createServerFn({ method: "POST" })
 	.inputValidator(input)
-	.handler(async ({ data }): Promise<NewKeyRes | { limit: LimitHit }> => {
-		const token = getCookie(COOKIE);
-		if (!token) throw expired(false);
-		const res = await fetch(`${base()}/v1/account/api-keys`, {
-			method: "POST",
-			headers: {
-				"content-type": "application/json",
-				authorization: `Bearer ${token}`,
-			},
-			body: JSON.stringify({ name: str(data.name) }),
-		}).catch(() => {
-			throw new ApiError("Cannot reach the Lunaz API. Try again shortly.", 502);
-		});
-		const body = await res.json().catch(() => null);
-		if (res.status === 402) return { limit: body as LimitHit };
-		if (res.status === 401) throw expired();
-		if (!res.ok)
-			throw new ApiError(
-				typeof body?.error === "string"
-					? body.error
-					: `Request failed (${res.status})`,
-				res.status,
-			);
-		return body as NewKeyRes;
-	});
+	.handler(
+		async ({ data }) =>
+			(await authed("/v1/account/api-keys", "POST", {
+				name: str(data.name),
+			})) as { id: string; name: string; prefix: string; key: string },
+	);
 
 export const revokeKey = createServerFn({ method: "POST" })
 	.inputValidator(input)
@@ -575,88 +547,41 @@ export const cancelWithdrawal = createServerFn({ method: "POST" })
 			(await authed(wd(data, "/cancel"), "POST")) as Withdrawal,
 	);
 
-/* ---------- Plans and billing ---------- */
+/* ---------- Fees ---------- */
 
-export type PlanId = "free" | "pro" | "platform" | "enterprise";
-export type Plan = {
-	id: PlanId;
-	name: string;
-	price_usd: number | null;
-	invoices_per_month: number | null;
-	api_keys: number | null;
-};
-export type AccountPlan = {
-	plan: PlanId;
-	plan_name: string;
-	expires_at: number | null;
-	limits: { invoices_per_month: number | null; api_keys: number | null };
-	usage: { invoices_this_month: number; api_keys_active: number };
-	period_start_of_month: number;
-	sandbox_billing: boolean;
-	billing_configured: boolean;
-};
-export type Checkout = {
-	subscription_id: string;
-	plan: PlanId;
-	months: number;
-	price_usd: number;
+export type Settlement = {
+	id: string;
+	invoice_id: string;
 	amount_zat: number;
-	zec_usd: number;
+	status: "pending" | "paid" | "expired";
+	created_at: number;
+	paid_at: number | null;
+};
+export type Fees = {
+	fee_bps: number;
+	fee_min_zat: number;
+	charged_zat: number;
+	paid_in_tx_zat: number;
+	settled_zat: number;
+	outstanding_zat: number;
+	settlements: Settlement[];
+};
+export type Settle = {
+	id: string;
+	amount_zat: number;
 	invoice: {
 		id: string;
 		address: string;
+		amount_zat: number;
 		zip321_uri: string;
 		expires_at: number;
-		status: Invoice["status"];
 	};
 };
-export type Subscription = {
-	id: string;
-	plan: PlanId;
-	months: number;
-	price_usd: number;
-	amount_zat: number;
-	zec_usd: number;
-	invoice_id: string;
-	status: "pending" | "paid" | "expired" | "cancelled" | "late_paid";
-	created_at: number;
-	paid_at: number | null;
-	period_start: number | null;
-	period_end: number | null;
-	invoice_status: Invoice["status"] | null;
-};
 
-export const listPlans = createServerFn({ method: "GET" }).handler(
-	async () => (await call("/v1/plans")) as Plan[],
+export const getFees = createServerFn({ method: "GET" }).handler(
+	async () => (await authed("/v1/account/fees")) as Fees,
 );
 
-export const getPlan = createServerFn({ method: "GET" }).handler(
-	async () => (await authed("/v1/account/plan")) as AccountPlan,
+export const settleFees = createServerFn({ method: "POST" }).handler(
+	async () => (await authed("/v1/account/fees/settle", "POST")) as Settle,
 );
-
-export const listBilling = createServerFn({ method: "GET" }).handler(
-	async () => (await authed("/v1/account/billing")) as Subscription[],
-);
-
-export const checkout = createServerFn({ method: "POST" })
-	.inputValidator(input)
-	.handler(async ({ data }) => {
-		const plan = str(data.plan);
-		const months = Number(data.months);
-		if (!["pro", "platform"].includes(plan) || ![1, 3, 12].includes(months))
-			throw new ApiError("Choose a plan and period", 400);
-		return (await authed("/v1/account/billing/checkout", "POST", {
-			plan,
-			months,
-		})) as Checkout;
-	});
-
-export const simulatePaid = createServerFn({ method: "POST" })
-	.inputValidator(input)
-	.handler(async ({ data }) => {
-		await authed(
-			`/v1/account/billing/${encodeURIComponent(str(data.id))}/simulate-paid`,
-			"POST",
-		);
-		return { ok: true };
-	});

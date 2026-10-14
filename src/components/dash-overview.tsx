@@ -7,13 +7,12 @@ import {
 } from "#/lib/wallet-gen";
 import {
 	type Account,
-	type AccountPlan,
 	type ApiKey,
+	type Fees,
 	type Invoice,
 	setViewingKey,
 	testWebhook,
 } from "#/server/dash";
-import { UsageStrip } from "./dash-billing";
 import {
 	Code,
 	CreateKeyForm,
@@ -50,7 +49,7 @@ type Props = {
 	keys: ApiKey[];
 	invoices: Invoice[];
 	webhook: { url: string | null };
-	plan: AccountPlan | null;
+	fees: Fees | null;
 };
 
 type Step = {
@@ -63,7 +62,7 @@ type Step = {
 
 const REQUIRED = 4;
 
-export function Overview({ account, keys, invoices, webhook, plan }: Props) {
+export function Overview({ account, keys, invoices, webhook, fees }: Props) {
 	const active = keys.filter((k) => !k.revoked_at);
 	const steps: Step[] = [
 		{
@@ -251,7 +250,7 @@ export function Overview({ account, keys, invoices, webhook, plan }: Props) {
 			/>
 			{namePrompt}
 			<div className="space-y-6">
-				{plan && <UsageStrip plan={plan} />}
+				{fees && <FeesStrip fees={fees} />}
 				<Stats invoices={invoices} />
 				<div className="grid gap-6 lg:grid-cols-3 lg:items-start">
 					<RecentInvoices invoices={invoices} />
@@ -260,6 +259,30 @@ export function Overview({ account, keys, invoices, webhook, plan }: Props) {
 				{timeline}
 			</div>
 		</>
+	);
+}
+
+function FeesStrip({ fees }: { fees: Fees }) {
+	const due = fees.outstanding_zat > 0;
+	return (
+		<section
+			aria-label="Outstanding fees"
+			className="dash-card flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4"
+		>
+			<div className="flex items-center gap-2">
+				<span className="text-sm text-kertas/65">Outstanding fees</span>
+				<Badge tone={due ? "warning" : "success"}>
+					{zec(fees.outstanding_zat)} ZEC
+				</Badge>
+			</div>
+			<Link
+				to="/dashboard/fees"
+				className={`${button(due ? "primary" : "ghost", "sm")} sm:ml-auto`}
+			>
+				{due ? "Pay fees" : "Fees"}
+				<Icon name="arrow" className="size-3.5" />
+			</Link>
+		</section>
 	);
 }
 
