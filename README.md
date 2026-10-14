@@ -12,6 +12,7 @@ Marketing site and developer dashboard for Lunaz, a Zcash payment gateway. Built
 - Invoices list with status, received and overpaid amounts.
 - Accountant CSV export.
 - Withdraw to bank (`/dashboard/withdraw`): quote ZEC to IDR or USD, the partner step for identity and bank, the deposit details and a live status timeline. The partner is a mock for now (TransFi sandbox next). The dashboard sends only the bank name and the last 4 digits of the account number.
+- Note: monthly plans are being replaced by per-payment fees (0.5% inside each shielded payment, 0.25% app fee on cross-chain swaps).
 - Plan & billing (`/dashboard/billing`): Free, Pro, Platform and Enterprise plans that differ only by volume, usage meters, and an upgrade flow paid in ZEC through a normal Lunaz invoice (status is polled every 3 s, sandbox "Simulate payment"). Plan limits (HTTP 402) show an inline upgrade prompt.
 - Settings page and a getting-started timeline for new accounts.
 
