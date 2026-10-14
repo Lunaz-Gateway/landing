@@ -47,7 +47,7 @@ browser --> TanStack Start server functions (src/server/dash.ts) --> core-servic
 ```bash
 cp .env.example .env
 bun install
-bun run dev        # http://localhost:3000 (use --port 3001 if the demo app runs on 3000)
+bun run dev        # http://localhost:3001 (the demo app uses 3000)
 bun run check      # biome
 ```
 
