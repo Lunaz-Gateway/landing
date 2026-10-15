@@ -161,7 +161,7 @@ export function Button({
 /* ---------- Form fields ---------- */
 
 export const control =
-	"w-full rounded-lg border border-white/[0.12] bg-[#171a36] shadow-[inset_0_1px_2px_rgb(0_0_0/0.15)] px-3 text-sm text-kertas placeholder:text-kertas/35 transition-colors duration-150 hover:border-white/25 focus-visible:border-lunas/70 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-lunas/20 aria-[invalid=true]:border-[#ff8a7a]/70 disabled:opacity-60";
+	"w-full rounded-lg border border-white/[0.12] bg-[#171a36] shadow-[inset_0_1px_2px_rgb(0_0_0/0.15)] px-3 text-sm text-kertas placeholder:text-kertas/35 transition-colors duration-150 hover:border-white/25 focus-visible:border-white/40 focus-visible:outline-none aria-[invalid=true]:border-[#ff8a7a]/70 disabled:opacity-60";
 
 type FieldProps = {
 	label: ReactNode;
@@ -620,7 +620,7 @@ export function Dialog({
 							<Icon name="x" />
 						</button>
 					</header>
-					<div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+					<div className="scrollbar-none min-h-0 flex-1 overflow-y-auto px-5 py-4">
 						{children}
 					</div>
 					{footer && (

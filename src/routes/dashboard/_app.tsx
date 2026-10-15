@@ -116,7 +116,7 @@ function Sidebar({ account }: { account: Account }) {
 			</div>
 			<nav
 				aria-label="Dashboard"
-				className="-mx-1 flex-1 space-y-5 overflow-y-auto px-1"
+				className="scrollbar-none -mx-1 flex-1 space-y-5 overflow-y-auto px-1"
 			>
 				{NAV.map((g) => (
 					<div key={g.group}>

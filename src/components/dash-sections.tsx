@@ -77,7 +77,7 @@ export function Code({
 					iconOnly
 				/>
 			</div>
-			<pre className="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-kertas/90">
+			<pre className="scrollbar-none overflow-x-auto p-4 font-mono text-xs leading-relaxed text-kertas/90">
 				{children}
 			</pre>
 		</div>

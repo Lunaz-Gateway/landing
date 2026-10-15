@@ -30,6 +30,11 @@ body {
   border-radius: 4px;
 }
 
+/* Text fields show focus through their border, not an outline. */
+:is(input:not([type="checkbox"], [type="radio"]), textarea, select):focus-visible {
+  outline: none;
+}
+
 .press {
   transition: transform 160ms var(--ease-out);
 }
