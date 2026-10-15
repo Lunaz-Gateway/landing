@@ -559,7 +559,7 @@ function QRow({ label, children }: { label: string; children: ReactNode }) {
 
 // The partner's hosted widget, drawn on paper so it reads as a separate surface
 const pField =
-	"mt-1 block h-10 w-full rounded-md border border-malam/20 bg-white px-3 text-sm text-malam placeholder:text-malam/40 focus-visible:border-malam focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-malam aria-[invalid=true]:border-[#c4382a]";
+	"mt-1 block h-10 w-full rounded-md border border-malam/20 bg-white px-3 text-sm text-malam placeholder:text-malam/40 focus-visible:border-malam focus-visible:outline-none aria-[invalid=true]:border-[#c4382a]";
 
 function KycStep({
 	w,
