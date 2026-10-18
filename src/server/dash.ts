@@ -585,3 +585,37 @@ export const getFees = createServerFn({ method: "GET" }).handler(
 export const settleFees = createServerFn({ method: "POST" }).handler(
 	async () => (await authed("/v1/account/fees/settle", "POST")) as Settle,
 );
+
+/* ---------- Limits ---------- */
+
+export type Limit = {
+	id:
+		| "invoices_day"
+		| "xc_invoice"
+		| "xc_day"
+		| "xc_first"
+		| "xc_month"
+		| "zec_day";
+	rail: "cross_chain" | "zec" | "invoices";
+	window: "invoice" | "24h" | "30d" | "first_days";
+	/** USD, or a count for invoices */
+	cap: number;
+	/** null for per-payment caps, or when the ZEC price is unavailable */
+	used: number | null;
+	ends_at: number | null;
+};
+export type Limits = {
+	tier: "new" | "established" | "verified";
+	limits: Limit[];
+	first_days: number;
+	next: {
+		tier: "established";
+		age_days_left: number;
+		paid_invoices_left: number;
+		fee_outstanding: boolean;
+	} | null;
+};
+
+export const getLimits = createServerFn({ method: "GET" }).handler(
+	async () => (await authed("/v1/account/limits")) as Limits,
+);
