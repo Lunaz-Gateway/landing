@@ -89,7 +89,7 @@ async function call(
 }
 
 const expired = (stale = true) => {
-	deleteCookie(COOKIE, { path: "/" });
+	clearSession();
 	return redirect({
 		to: "/dashboard/login",
 		search: { expired: stale || undefined },
@@ -108,14 +108,20 @@ async function authed(path: string, method = "GET", body?: unknown) {
 	}
 }
 
+// Deleting needs the same attributes as setting (__Host- rejects a delete without Secure)
+const cookieOpts = {
+	httpOnly: true,
+	sameSite: "lax",
+	secure: PROD,
+	path: "/",
+} as const;
+
+function clearSession() {
+	deleteCookie(COOKIE, cookieOpts);
+}
+
 function startSession(token: string) {
-	setCookie(COOKIE, token, {
-		httpOnly: true,
-		sameSite: "lax",
-		secure: PROD,
-		path: "/",
-		maxAge: SESSION_SECS,
-	});
+	setCookie(COOKIE, token, { ...cookieOpts, maxAge: SESSION_SECS });
 }
 
 const str = (v: unknown) => String(v ?? "");
@@ -221,7 +227,7 @@ export const setName = createServerFn({ method: "POST" })
 
 export const logout = createServerFn({ method: "POST" }).handler(async () => {
 	const token = getCookie(COOKIE);
-	deleteCookie(COOKIE, { path: "/" });
+	clearSession();
 	if (token)
 		await call("/v1/auth/logout", "POST", undefined, token).catch(() => {});
 	return { ok: true };
@@ -237,7 +243,7 @@ export const getAccount = createServerFn({ method: "GET" }).handler(
 			return { ...a, viewing_key_set: a.viewing_key_set ?? !!a.ufvk_set };
 		} catch (e) {
 			if (e instanceof ApiError && e.status === 401) {
-				deleteCookie(COOKIE, { path: "/" });
+				clearSession();
 				return null;
 			}
 			throw e;
